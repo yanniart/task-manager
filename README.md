@@ -39,6 +39,18 @@ python -m http.server 8000
 | 날짜 바꿔 보기 (개발용) | `http://localhost:8000/?today=2026-11-12` — 그 날짜를 오늘로 보고 이월·반복이 동작해요. localhost·사설 IP에서만 켜지고 배포 주소에서는 무시돼요. |
 | 휴대폰에서 열기 | PC와 같은 Wi‑Fi에서 `http://PC의IP:8000/` (예: `http://192.168.0.13:8000/`). 할 일 기능은 모두 되지만, HTTPS가 아니라서 오프라인·홈 화면 추가는 안 돼요. |
 
+### 테스트
+
+```bash
+node tests/run-core.mjs            # core 로직 78개 (1초) — 시간대 바꾸기: --tz=America/Los_Angeles
+node tests/store.test.mjs          # 저장·휴지통·가져오기 확인 (1초)
+node tests/e2e/run.mjs             # 실제 화면을 눌러 보는 브라우저 확인 185개 (약 2분, Chrome 필요)
+node tests/e2e/run.mjs 07          # 한 단계만
+node tests/e2e/run.mjs perf        # 성능 측정
+```
+
+브라우저 확인은 Node 22 이상과 Chrome(또는 Edge)이 필요해요. 앱 서버가 안 떠 있으면 Python으로 잠깐 띄워요. 자세한 건 [TRD 8장](docs/TRD.md#8-테스트).
+
 ### 개발할 때 주의: 서비스 워커 캐시
 
 localhost에서 한 번 열면 서비스 워커가 앱 파일을 **캐시 먼저** 보여줘요. 그래서 파일을 고쳐도 새로고침에 바로 안 보일 수 있어요.
@@ -115,7 +127,7 @@ task-manager/
 │   ├── features/   # PWA (서비스 워커 등록)
 │   └── ui/         # 화면 그리기, 시트, 반복 일정 관리, 드래그, 검색창, 더보기, 알림
 ├── assets/icons/   # 앱 아이콘 (SVG 원본 + PNG)
-├── tests/      # core 로직 확인 페이지
+├── tests/      # core 테스트(브라우저·Node), store 확인, 브라우저 확인(e2e/)
 └── docs/       # PRD, TRD, 디자인, 개발로그, 기술로그
 ```
 

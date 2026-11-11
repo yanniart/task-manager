@@ -1,6 +1,6 @@
 # 할 일 관리 앱 TRD (기술 요구사항 문서)
 
-- 문서 버전: v0.5 (v0.2: 알림 설계 제거, id 대체 생성 방법 추가 · v0.3: 순서 규칙 5.4, 시트 설계 5.9 추가 · v0.4: 화면 모드 `settings.theme`, 6장 · v0.5: 검색·정렬·내보내기/가져오기·중복 확인·휴지통·성능 5.10~5.15, `trash`, `settings.sort` · v0.6: 정렬 아이콘 메뉴 `ui/sort-menu.js` · v0.7: 키워드 자동 분류 `core/classify.js`, `settings.autoCategory`, 5.16)
+- 문서 버전: v0.5 (v0.2: 알림 설계 제거, id 대체 생성 방법 추가 · v0.3: 순서 규칙 5.4, 시트 설계 5.9 추가 · v0.4: 화면 모드 `settings.theme`, 6장 · v0.5: 검색·정렬·내보내기/가져오기·중복 확인·휴지통·성능 5.10~5.15, `trash`, `settings.sort` · v0.6: 정렬 아이콘 메뉴 `ui/sort-menu.js` · v0.7: 키워드 자동 분류 `core/classify.js`, `settings.autoCategory`, 5.16 · v0.8: 확인 스크립트를 `tests/`에, 8장)
 - 최종 수정: 2026-11-11
 - 관련 문서: [PRD](PRD.md) · [개발로그](dev-log.md) · [기술로그](tech-log.md)
 
@@ -78,7 +78,10 @@ task-manager/
 │   └── icons/               # 앱 아이콘 (SVG 원본 + 192px, 512px, maskable, iPhone용)
 │
 ├── tests/
-│   └── core.test.html       # core/ 함수를 브라우저에서 확인하는 간단한 테스트 페이지
+│   ├── core.test.html       # core/ 함수를 브라우저에서 확인하는 간단한 테스트 페이지
+│   ├── run-core.mjs         # 같은 테스트를 Node에서 (시간대 바꿔 보기 --tz=)
+│   ├── store.test.mjs       # store·storage 확인 (Node, 가짜 localStorage)
+│   └── e2e/                 # 브라우저 확인: run.mjs(실행기), harness.js, audit.js, steps/*.js (8장)
 │
 └── docs/
     ├── PRD.md               # 무엇을 만드는지
@@ -402,6 +405,27 @@ export function createId() {
 - 외부로 데이터를 보내는 코드는 없어요.
 
 ## 8. 테스트
+
+세 가지가 있어요. 아무것도 설치하지 않아도 돼요(Node·Chrome·Python만).
+
+| 무엇 | 실행 | 걸리는 시간 |
+|---|---|---|
+| core 테스트 (순수 로직 78개) | 브라우저로 `tests/core.test.html` 열기, 또는 `node tests/run-core.mjs` | 1초 |
+| store·storage 확인 (휴지통·가져오기·저장 실패 등) | `node tests/store.test.mjs` | 1초 |
+| 브라우저 확인 (실제 화면을 눌러 보기, 185개) | `node tests/e2e/run.mjs` (고른 단계만: `node tests/e2e/run.mjs 04 07`) | 약 2분 |
+| 성능 측정 | `node tests/e2e/run.mjs perf` (`PERF_N=100`처럼 개수 지정) | 1~2분 |
+
+- **시간대**: `node tests/run-core.mjs --tz=America/Los_Angeles`. Windows(Git Bash 등)에서는 `TZ=… node`가 무시되니 꼭 `--tz=`로 넘겨요.
+- **브라우저 확인 방식**: Chrome 확장·라이브러리 없이, 설치된 Chrome(없으면 Edge)을 헤드리스로 띄워 DevTools 프로토콜(Node 22 내장 WebSocket)로 조작해요. 실제 터치·마우스·키 입력, 서버를 끈 뒤 새로고침(오프라인), PC IP 접속, 라이트·다크 글자 대비, 두 탭, 파일 내려받기·올리기까지 확인해요.
+  - `run.mjs`가 Chrome·Python을 찾고, 앱 서버(`BASE_URL`, 기본 `http://localhost:8000/`)가 없으면 잠깐 띄우고, 단계마다 `harness.js + audit.js + steps/<단계>.js`를 이어 붙여 실행해요. 단계 파일은 단독 실행 파일이 아니에요(공통 함수 `send·evaluate·check`를 그냥 써요).
+  - 단계마다 새 Chrome 프로필(서비스 워커·저장소가 빈 상태)로 시작해요.
+  - 결과(스크린샷·단계별 로그)는 `tests/e2e/.output/`에 남고 git에는 올라가지 않아요.
+  - 환경 변수로 바꿀 수 있어요: `CHROME_PATH`, `BASE_URL`, `PYTHON`, `CDP_PORT`, `SECOND_PORT`(5단계가 껐다 켜는 서버, 기본 8001).
+  - 사설 IP가 없는 컴퓨터에서는 "PC IP로 접속" 확인을 건너뛰어요.
+  - `python -m http.server`는 동시에 연결이 몰리면 가끔 한 번 거절해요(`ERR_CONNECTION_REFUSED`). 그 단계만 다시 돌리면 돼요(앱 문제 아님).
+- **기능을 바꾸면**: 관련 단계 파일의 기대값도 같이 고쳐요. 앱 파일을 더하면 5단계의 캐시 파일 개수(`sw.count`)도 바꿔요.
+
+core 테스트에서 확인하는 것:
 
 - `tests/core.test.html`: 브라우저로 열면 `core/` 함수들을 실행하고 통과/실패를 화면에 보여주는 간단한 페이지예요. 테스트 프레임워크 없이 `console.assert` 수준으로 만들어요.
   - 이월: 어제 미완료 → 오늘로, 어제 완료 → 그대로, 어제 반복 미완료 → 삭제

@@ -20,11 +20,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 python -m http.server 8000      # http://localhost:8000
 ```
 
-- 테스트: `http://localhost:8000/tests/core.test.html`을 브라우저로 열면 `js/core/` 함수를 실행하고 통과/실패를 화면에 표시 (테스트 프레임워크 없음). 개별 테스트 실행 기능은 없음. 결과는 콘솔에도 찍히고 `globalThis.__testSummary`(`{ total, failed }`)와 문서 제목(✅/❌)에도 남음.
-- `core/` 함수는 DOM 없이 동작하므로 Node(ESM 자동 인식)에서 직접 import해서 빠르게 확인할 수도 있음.
+테스트 (TRD 8장, 프레임워크 없음):
+
+```bash
+node tests/run-core.mjs [--tz=America/Los_Angeles]   # core 78개, 1초 (core.test.html의 스크립트를 Node에서)
+node tests/store.test.mjs                            # store·storage, 1초
+node tests/e2e/run.mjs [02 07 ...]                   # 브라우저 확인 185개, 약 2분 (단계 파일 이름 앞부분으로 고르기)
+node tests/e2e/run.mjs perf                          # 성능 측정 (PERF_N=300)
+```
+
+- `tests/core.test.html`은 브라우저에서도 열 수 있음(제목 ✅/❌, `globalThis.__testSummary`). 개별 테스트만 고르는 기능은 없음.
+- **시간대는 `--tz=`로**: Windows에서는 `TZ=… node`가 무시됨(실제로 겪음, 개발로그 참고).
+- e2e 단계 파일(`tests/e2e/steps/*.js`)은 단독 실행 불가 — `run.mjs`가 `harness.js`+`audit.js` 뒤에 이어 붙여 실행. 기능을 바꾸면 해당 단계의 기대값도 고칠 것. 앱 파일을 더하면 `05-pwa-dark-mode.js`의 캐시 파일 개수도.
+- `python -m http.server`가 가끔 연결을 한 번 거절함 → 그 단계만 다시 돌리면 됨.
 - 모바일 확인은 375px 화면 기준. 휴대폰에서 PC IP(`http://192.168...`)로 접속하면 서비스 워커와 `crypto.randomUUID`가 없으므로 이 환경에서도 앱이 멈추지 않아야 함.
 - 개발용 `?today=YYYY-MM-DD`로 날짜를 바꿔 이월·반복을 확인 (localhost·사설 IP에서만 켜짐, TL-014). 날짜를 앞으로 되돌리면 뒤 날짜에 만든 할 일은 "미래"라서 안 보임.
-- 브라우저 확인은 Chrome 확장 없이, 설치된 Chrome을 헤드리스로 띄워 DevTools 프로토콜(Node 내장 WebSocket)로 조작하는 방식으로 해 왔음.
+- 브라우저 확인은 Chrome 확장 없이, 설치된 Chrome을 헤드리스로 띄워 DevTools 프로토콜(Node 22 내장 WebSocket)로 조작(`tests/e2e/`).
 
 ## 아키텍처 핵심
 

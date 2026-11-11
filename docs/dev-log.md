@@ -23,6 +23,36 @@
 
 ---
 
+## 2026-11-11 (수) — git 저장소, 확인 스크립트를 tests/로
+
+### 한 일
+
+- git 저장소(`main`)를 만들고 첫 커밋. `.gitattributes`(글자 파일 LF, PNG 바이너리), `.gitignore`(확인 결과물, OS 파일)
+- 확인 스크립트를 작업용 임시 폴더에서 `tests/`로 옮기고 어느 컴퓨터에서든 돌게 정리
+  - `tests/run-core.mjs`: core 테스트를 Node에서 (`--tz=`로 시간대 바꾸기)
+  - `tests/store.test.mjs`: store·storage 확인
+  - `tests/e2e/run.mjs`: 브라우저 확인 실행기(Chrome·Python 찾기, 서버 없으면 띄우기, 단계 고르기, 합계) + `harness.js`, `audit.js`, `steps/02~08`, `steps/perf.js`
+- 기술로그 [TL-024](tech-log.md#tl-024), TRD 8장·README·CLAUDE.md에 실행 방법
+
+### 확인 결과
+
+| 무엇 | 결과 |
+|---|---|
+| `node tests/run-core.mjs --tz=…` 7개 시간대 (서울, LA, UTC, 오클랜드, 세인트존스, +14, −11) | 78개씩 모두 통과 ✅ |
+| `node tests/store.test.mjs` | 23개 모두 통과 ✅ |
+| `node tests/e2e/run.mjs` (한 번에 전부, 약 1분 반) | **185개 모두 통과** ✅ |
+| `node tests/e2e/run.mjs perf` (300개, CPU 4배 느리게) | 체크 25ms, 한 칸 옮기기 8ms, 필터 33ms, 빠른 입력 다시 그리기 1번 |
+
+### 문제와 해결
+
+- **시간대 확인이 사실은 안 되고 있었음**: Windows(Git Bash)에서 `TZ=America/Los_Angeles node …`가 무시되고 계속 서울 시간으로 돌았어요. 1~3단계 기록의 "미국 시간대로도 통과"는 그때 실제로 확인된 게 아니었어요. 실행 중에 `process.env.TZ`를 바꾸는 `--tz=` 옵션으로 고치고, 이번에 7개 시간대에서 실제로 통과하는 것을 확인했어요.
+- 단계마다 같은 Chrome 프로필 폴더를 지우고 다시 쓰다가 `EPERM`(Windows에서 Chrome이 잠깐 파일을 잡고 있음) → 단계마다 새 폴더, 끝에 정리
+- 5단계 파일에 `audit.js`와 같은 대비 계산 코드가 남아 있어 두 번 선언됨 → 5단계 쪽을 지움
+- 8단계에서 개발 서버가 연결을 한 번 거절(이미 알던 현상) → 다시 돌리니 통과
+- 문서에 "약 10분"이라고 적었는데 실제로는 약 1분 반 → 고침
+
+---
+
 ## 2026-11-11 (수) — 키워드 기반 카테고리 자동 분류 (PRD v0.8, F18)
 
 ### 한 일
