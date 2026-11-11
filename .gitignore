@@ -1,0 +1,7 @@
+# 브라우저 확인 스크립트가 만드는 결과물 (스크린샷, Chrome 프로필, 내려받은 파일)
+tests/e2e/.output/
+
+# 운영체제가 만드는 파일
+.DS_Store
+Thumbs.db
+desktop.ini

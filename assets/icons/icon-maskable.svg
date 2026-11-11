@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 앱 아이콘 (maskable): Android가 원·둥근 사각형 등으로 잘라 써요.
+       바탕을 끝까지 채우고, 체크는 가운데 안전 영역(지름 80%) 안에 작게 둬요. -->
+  <rect width="512" height="512" fill="#0075de"/>
+  <path d="M178 264l56 56 104-116" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

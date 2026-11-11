@@ -1,0 +1,119 @@
+/* 화면 배치: 헤더, 목록 영역, 떠 있는 버튼, 반복 일정 관리 화면.
+   휴대폰(360~430px) 기준, 넓으면 가운데 정렬. */
+
+.app {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  min-height: 100dvh;
+}
+
+/* 진행률이 항상 보이도록 헤더 전체를 위에 붙여 둬요 (PRD 2장 목표). */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: calc(var(--space-5) + env(safe-area-inset-top)) calc(var(--space-4) + env(safe-area-inset-right))
+    var(--space-4) calc(var(--space-4) + env(safe-area-inset-left));
+  background: var(--color-canvas);
+}
+
+.app-header__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 제목과 그 아래 날짜. 버튼이 4개라 날짜를 아래 줄로 내렸어요 (TL-021). */
+.app-header__heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header__title {
+  flex: none;
+  white-space: nowrap; /* 좁은 화면에서도 제목은 한 줄 */
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.23;
+  letter-spacing: -0.625px;
+}
+
+.app-header__date {
+  word-break: keep-all; /* 한글 낱말 중간에서 끊지 않기 */
+  color: var(--color-ink-muted);
+  font-size: 14px;
+  line-height: 1.43;
+}
+
+/* 개발용 ?today 날짜로 실행 중일 때 눈에 띄게 (TL-014) */
+.app-header__date--dev {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* 오른쪽 버튼 묶음: 검색(F13) · 화면 모드(F12) · 반복 일정(F8) · 더보기(F14·F15·F17) */
+.app-header__actions {
+  flex: none;
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+  align-self: center;
+  margin-right: calc(var(--space-2) * -1);
+}
+
+.app-main {
+  /* 마지막 항목·버튼이 떠 있는 + 버튼에 가리지 않도록 아래 여백을 넉넉히 */
+  padding: var(--space-1) calc(var(--space-4) + env(safe-area-inset-right))
+    calc(var(--fab-size) + var(--space-5) * 2 + env(safe-area-inset-bottom))
+    calc(var(--space-4) + env(safe-area-inset-left));
+}
+
+.fab {
+  position: fixed;
+  z-index: 20;
+  right: max(calc(var(--space-4) + env(safe-area-inset-right)), calc((100vw - var(--content-max)) / 2 + var(--space-4)));
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+}
+
+/* ---------- 반복 일정 관리: 화면 전체를 덮는 화면 ---------- */
+
+.rules-view {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-canvas);
+}
+
+.rules-view__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: calc(var(--space-4) + env(safe-area-inset-top)) calc(var(--space-4) + env(safe-area-inset-right))
+    var(--space-4) calc(var(--space-2) + env(safe-area-inset-left));
+  background: var(--color-canvas);
+}
+
+.rules-view__title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.27;
+  letter-spacing: -0.25px;
+}
+
+.rules-view__body {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 calc(var(--space-4) + env(safe-area-inset-right)) calc(var(--space-5) + env(safe-area-inset-bottom))
+    calc(var(--space-4) + env(safe-area-inset-left));
+}

@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>core 테스트</title>
+    <link rel="icon" href="data:," />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; line-height: 1.5; }
+      #summary { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+      .pass { color: #15803d; }
+      .fail { color: #b91c1c; }
+      h2 { font-size: 1rem; margin: 16px 0 4px; }
+      ul { margin: 0; padding-left: 20px; }
+      pre { margin: 2px 0 6px; white-space: pre-wrap; font-size: 0.8125rem; }
+    </style>
+  </head>
+  <body>
+    <p id="summary">실행 중…</p>
+    <div id="results"></div>
+
+    <script type="module">
+      import {
+        toKey, todayKey, fromKey, weekdayOf, compareKeys, formatHeaderDate,
+        formatMonthDay, isValidKey, msUntilNextMidnight,
+      } from "../js/core/date.js";
+      import { matches, normalizeRepeat, describeRepeat } from "../js/core/recurrence.js";
+      import { runRollover } from "../js/core/rollover.js";
+      import { normalizeText, parseQuery, matchesQuery, findMatchRanges, findDuplicateTodo, findDuplicateRule, withParticle } from "../js/core/text.js";
+      import { sortForView } from "../js/core/sort.js";
+      import { debounce } from "../js/core/debounce.js";
+      import { addToTrash, purgeTrash, takeFromTrash } from "../js/core/trash.js";
+      import { classify, effectiveKeywords, parseKeywordInput, normalizeKeywordMap, findKeywordConflicts } from "../js/core/classify.js";
+      import { DEFAULT_CATEGORY_KEYWORDS } from "../js/constants.js";
+      import { createId } from "../js/core/id.js";
+      import { insertIndex, insertNew, insertAt, appendLast, move, moveVisible, renumber } from "../js/core/order.js";
+      import { calcProgress, toPercent } from "../js/core/progress.js";
+
+      // ---------- 아주 작은 테스트 도구 ----------
+      const results = [];
+      let group = "";
+      const describe = (name, fn) => { group = name; fn(); };
+      function test(name, fn) {
+        try {
+          fn();
+          results.push({ group, name, ok: true });
+        } catch (error) {
+          results.push({ group, name, ok: false, message: error.message });
+        }
+      }
+      function eq(actual, expected, label = "") {
+        const a = JSON.stringify(actual);
+        const e = JSON.stringify(expected);
+        if (a !== e) throw new Error(`${label ? label + ": " : ""}기대 ${e}, 실제 ${a}`);
+      }
+      function ok(value, label = "참이어야 해요") {
+        if (!value) throw new Error(label);
+      }
+
+      // 테스트용 할 일 (필요한 필드만)
+      const todo = (id, carriedFrom = null) => ({ id, carriedFrom, order: -1 });
+      const ids = (list) => list.map((t) => t.id);
+      const orders = (list) => list.map((t) => t.order);
+      const isContinuous = (list) => list.every((t, i) => t.order === i);
+
+      // ---------- date ----------
+      describe("date", () => {
+        test("한국 시간 새벽(00:30)에도 오늘 날짜가 나옴", () => {
+          eq(toKey(new Date(2026, 10, 11, 0, 30)), "2026-11-11");
+        });
+        test("UTC로는 전날인 오전 8:59에도 오늘 날짜가 나옴", () => {
+          eq(todayKey(new Date(2026, 10, 11, 8, 59)), "2026-11-11");
+        });
+        test("하루의 끝(23:59)도 같은 날", () => {
+          eq(toKey(new Date(2026, 10, 11, 23, 59, 59)), "2026-11-11");
+        });
+        test("한 자리 월·일은 0을 채움", () => {
+          eq(toKey(new Date(2026, 0, 5)), "2026-01-05");
+        });
+        test("fromKey → toKey 왕복", () => {
+          eq(toKey(fromKey("2026-02-28")), "2026-02-28");
+        });
+        test("요일: 2026-11-11은 수요일(3), 2026-11-15는 일요일(0)", () => {
+          eq(weekdayOf("2026-11-11"), 3);
+          eq(weekdayOf("2026-11-15"), 0);
+        });
+        test("compareKeys", () => {
+          ok(compareKeys("2026-11-10", "2026-11-11") < 0, "어제 < 오늘");
+          ok(compareKeys("2026-12-01", "2026-11-30") > 0, "12월 > 11월");
+          eq(compareKeys("2026-11-11", "2026-11-11"), 0);
+        });
+        test("헤더 날짜 표시 '11.11(수)'", () => {
+          eq(formatHeaderDate("2026-11-11"), "11.11(수)");
+          eq(formatHeaderDate("2026-01-04"), "1.4(일)");
+        });
+        test("이월 표시 '11/10'", () => {
+          eq(formatMonthDay("2026-11-10"), "11/10");
+          eq(formatMonthDay("2026-01-05"), "1/5");
+        });
+        test("isValidKey: 없는 날짜·형식 오류는 false", () => {
+          eq(isValidKey("2026-11-12"), true);
+          eq(isValidKey("2026-02-30"), false);
+          eq(isValidKey("2026-1-5"), false);
+          eq(isValidKey("내일"), false);
+          eq(isValidKey(null), false);
+        });
+        test("다음 자정까지 남은 시간", () => {
+          eq(msUntilNextMidnight(new Date(2026, 10, 11, 23, 59, 0)), 60 * 1000);
+          eq(msUntilNextMidnight(new Date(2026, 10, 11, 0, 0, 0)), 24 * 60 * 60 * 1000);
+          eq(msUntilNextMidnight(new Date(2026, 11, 31, 23, 0, 0)), 60 * 60 * 1000, "연말");
+        });
+      });
+
+      // ---------- id ----------
+      describe("id", () => {
+        test("randomUUID가 있으면 그 값을 씀", () => {
+          eq(createId({ randomUUID: () => "uuid-1" }), "uuid-1");
+        });
+        test("randomUUID가 없어도(http:// 접속) 오류 없이 문자열을 돌려줌", () => {
+          const id = createId(undefined);
+          ok(typeof id === "string" && id.length > 5, "문자열이어야 해요");
+          eq(typeof createId({}), "string");
+        });
+        test("randomUUID가 없을 때 1000개를 만들어도 서로 다름", () => {
+          const set = new Set();
+          for (let i = 0; i < 1000; i += 1) set.add(createId(undefined));
+          eq(set.size, 1000);
+        });
+      });
+
+      // ---------- order ----------
+      describe("order", () => {
+        test("빈 목록이면 새 할 일 자리는 0", () => {
+          eq(insertIndex([]), 0);
+          eq(ids(renumber(insertNew([], todo("n")))), ["n"]);
+        });
+        test("이월 2개 + 일반 3개일 때 새 할 일은 3번째 자리", () => {
+          const list = [todo("c1", "2026-11-09"), todo("c2", "2026-11-10"), todo("a"), todo("b"), todo("c")];
+          eq(insertIndex(list), 2);
+          const next = renumber(insertNew(list, todo("new")));
+          eq(ids(next), ["c1", "c2", "new", "a", "b", "c"]);
+          ok(isContinuous(next), "order가 0부터 빈틈없이 이어져야 해요");
+        });
+        test("이월 항목을 아래로 드래그한 뒤에는 새 할 일이 맨 위", () => {
+          const list = renumber([todo("c1", "2026-11-10"), todo("a"), todo("b")]);
+          const dragged = renumber(move(list, 0, 2));
+          eq(ids(dragged), ["a", "b", "c1"]);
+          eq(insertIndex(dragged), 0);
+          const next = renumber(insertNew(dragged, todo("new")));
+          eq(ids(next), ["new", "a", "b", "c1"]);
+          ok(isContinuous(next));
+        });
+        test("맨 위 이월 항목이 '연속'일 때만 셈", () => {
+          const list = [todo("c1", "2026-11-10"), todo("a"), todo("c2", "2026-11-10")];
+          eq(insertIndex(list), 1);
+        });
+        test("완료 취소(appendLast)는 맨 아래", () => {
+          const list = renumber([todo("c1", "2026-11-10"), todo("a"), todo("b")]);
+          const next = renumber(appendLast(list, todo("undone")));
+          eq(ids(next), ["c1", "a", "b", "undone"]);
+          ok(isContinuous(next));
+        });
+        test("move: 위로·아래로, 받은 배열은 바꾸지 않음", () => {
+          const list = [todo("a"), todo("b"), todo("c"), todo("d")];
+          eq(ids(move(list, 3, 0)), ["d", "a", "b", "c"]);
+          eq(ids(move(list, 0, 2)), ["b", "c", "a", "d"]);
+          eq(ids(move(list, 1, 99)), ["a", "c", "d", "b"]);
+          eq(ids(list), ["a", "b", "c", "d"], "원본");
+        });
+        test("insertNew·appendLast도 받은 배열은 바꾸지 않음", () => {
+          const list = [todo("a")];
+          insertNew(list, todo("x"));
+          appendLast(list, todo("y"));
+          eq(ids(list), ["a"]);
+        });
+        test("moveVisible: 필터 상태에서 옮겨도 안 보이는 항목은 제자리, 상대 순서 유지", () => {
+          // w = 업무(보임), p = 개인(안 보임)
+          const list = ["w1", "p1", "w2", "p2", "w3", "p3"].map((id) => todo(id));
+          const isWork = (t) => t.id.startsWith("w");
+          const next = renumber(moveVisible(list, isWork, 2, 0)); // 보이는 것 중 3번째(w3)를 맨 위로
+          eq(ids(next), ["w3", "p1", "w1", "p2", "w2", "p3"]);
+          eq(ids(next.filter((t) => !isWork(t))), ["p1", "p2", "p3"], "안 보이는 항목 순서");
+          eq(next.filter((t) => !isWork(t)).map((t) => list.indexOf(t)), [1, 3, 5], "안 보이는 항목 자리");
+          ok(isContinuous(next));
+        });
+        test("moveVisible: 필터가 꺼져 있으면 move와 같음", () => {
+          const list = ["a", "b", "c", "d"].map((id) => todo(id));
+          eq(ids(moveVisible(list, () => true, 0, 3)), ids(move(list, 0, 3)));
+        });
+        test("moveVisible: 받은 배열은 바꾸지 않음, 범위 밖이면 그대로", () => {
+          const list = ["w1", "p1", "w2"].map((id) => todo(id));
+          const isWork = (t) => t.id.startsWith("w");
+          eq(ids(moveVisible(list, isWork, 5, 0)), ["w1", "p1", "w2"]);
+          moveVisible(list, isWork, 0, 1);
+          eq(ids(list), ["w1", "p1", "w2"]);
+        });
+        test("필터 상태에서 이월 항목을 아래로 옮긴 뒤 새 할 일은 맨 위", () => {
+          const list = renumber([todo("c1", "2026-11-10"), todo("w1"), todo("p1")]);
+          const isWork = (t) => t.id !== "p1";
+          const dragged = renumber(moveVisible(list, isWork, 0, 1)); // 보이는 [c1, w1] → [w1, c1]
+          eq(ids(dragged), ["w1", "c1", "p1"]);
+          eq(ids(renumber(insertNew(dragged, todo("new")))), ["new", "w1", "c1", "p1"]);
+        });
+        test("insertAt: 원래 자리로, 범위 밖이면 끝, 받은 배열은 그대로", () => {
+          const list = [todo("a"), todo("b"), todo("c")];
+          eq(ids(insertAt(list, todo("x"), 1)), ["a", "x", "b", "c"]);
+          eq(ids(insertAt(list, todo("x"), 99)), ["a", "b", "c", "x"]);
+          eq(ids(insertAt(list, todo("x"), -3)), ["x", "a", "b", "c"]);
+          eq(ids(insertAt(list, todo("x"), undefined)), ["a", "b", "c", "x"]);
+          eq(ids(list), ["a", "b", "c"]);
+        });
+        test("renumber는 빈 번호·중복 번호를 정리함", () => {
+          const list = [{ id: "a", order: 5 }, { id: "b", order: 5 }, { id: "c", order: 9 }];
+          eq(orders(renumber(list)), [0, 1, 2]);
+        });
+      });
+
+      // ---------- progress ----------
+      describe("progress", () => {
+        const T = "2026-11-11";
+        const p = (category, done, date = T) => ({ category, done, date });
+
+        test("할 일이 0개면 0%, 완료 아님", () => {
+          const r = calcProgress([], T);
+          eq([r.total, r.done, r.percent, r.isComplete], [0, 0, 0, false]);
+          eq(r.byCategory, { work: { total: 0, done: 0 }, personal: { total: 0, done: 0 }, study: { total: 0, done: 0 } });
+        });
+        test("7 / 12 완료 → 58%", () => {
+          const todos = [...Array(7)].map(() => p("work", true)).concat([...Array(5)].map(() => p("work", false)));
+          const r = calcProgress(todos, T);
+          eq([r.done, r.total, r.percent], [7, 12, 58]);
+        });
+        test("카테고리별로 따로 셈", () => {
+          const todos = [
+            p("work", true), p("work", false), p("work", true),
+            p("personal", false),
+            p("study", true),
+          ];
+          const r = calcProgress(todos, T);
+          eq(r.byCategory, { work: { total: 3, done: 2 }, personal: { total: 1, done: 0 }, study: { total: 1, done: 1 } });
+          eq([r.done, r.total], [3, 5]);
+        });
+        test("오늘 날짜만 셈 (지난 날짜 완료 항목은 빠짐)", () => {
+          const r = calcProgress([p("work", true, "2026-11-10"), p("work", false)], T);
+          eq([r.done, r.total, r.percent], [0, 1, 0]);
+        });
+        test("모두 끝내면 100%, 완료", () => {
+          const r = calcProgress([p("work", true), p("study", true)], T);
+          eq([r.percent, r.isComplete], [100, true]);
+        });
+        test("다 끝내지 않았으면 반올림해도 100%가 아님", () => {
+          eq(toPercent(199, 200), 99);
+          eq(toPercent(2, 3), 67);
+          eq(toPercent(1, 3), 33);
+        });
+      });
+
+      // ---------- recurrence ----------
+      // 2026-11-13 금, 11-14 토, 11-15 일, 11-16 월, 11-18 수
+      describe("recurrence", () => {
+        const rule = (type, days = []) => ({ repeat: { type, days } });
+        test("매일은 모든 요일", () => {
+          ok(["2026-11-13", "2026-11-14", "2026-11-15"].every((d) => matches(rule("daily"), d)));
+        });
+        test("평일 규칙은 금요일엔 맞고 토·일엔 안 맞음", () => {
+          eq(matches(rule("weekdays"), "2026-11-13"), true);
+          eq(matches(rule("weekdays"), "2026-11-14"), false);
+          eq(matches(rule("weekdays"), "2026-11-15"), false);
+          eq(matches(rule("weekdays"), "2026-11-16"), true);
+        });
+        test("매주 월·수", () => {
+          const r = rule("weekly", [1, 3]);
+          eq(["2026-11-13", "2026-11-16", "2026-11-17", "2026-11-18"].map((d) => matches(r, d)), [false, true, false, true]);
+        });
+        test("normalizeRepeat: 매주인데 요일이 없으면 null, 요일은 중복 없이 정렬", () => {
+          eq(normalizeRepeat({ type: "weekly", days: [] }), null);
+          eq(normalizeRepeat({ type: "weekly", days: ["3", 1, 3, 9] }), { type: "weekly", days: [1, 3] });
+          eq(normalizeRepeat({ type: "daily", days: [1] }), { type: "daily", days: [] });
+          eq(normalizeRepeat({ type: "none" }), null);
+        });
+        test("describeRepeat: 요일은 월요일부터", () => {
+          eq(describeRepeat({ type: "daily" }), "매일");
+          eq(describeRepeat({ type: "weekdays" }), "평일");
+          eq(describeRepeat({ type: "weekly", days: [0, 3, 1] }), "매주 월·수·일");
+        });
+      });
+
+      // ---------- rollover ----------
+      describe("rollover", () => {
+        const TODAY = "2026-11-14"; // 토요일
+        let seq = 0;
+        const deps = { createId: () => `gen-${++seq}`, now: () => "2026-11-14T00:00:00.000Z" };
+        const mk = (id, date, extra = {}) => ({
+          id, text: id, category: "work", date, done: false, order: 0,
+          ruleId: null, carriedFrom: null, createdAt: "", completedAt: null, ...extra,
+        });
+        const rl = (id, type, extra = {}) => ({
+          id, text: id, category: "study", repeat: { type, days: extra.days ?? [] },
+          paused: false, createdAt: "", lastGeneratedDate: null, ...extra,
+        });
+        const st = (todos, rules = []) => ({ version: 1, todos, rules, settings: { filter: "all", lastCategory: "work", lastOpenedDate: null } });
+        const activeIds = (s) => s.todos.filter((t) => t.date === TODAY && !t.done).sort((a, b) => a.order - b.order).map((t) => t.id);
+
+        test("어제 미완료 → 오늘로, carriedFrom에 원래 날짜", () => {
+          const { state } = runRollover(st([mk("a", "2026-11-13")]), TODAY, deps);
+          eq([state.todos[0].date, state.todos[0].carriedFrom], [TODAY, "2026-11-13"]);
+        });
+        test("어제 완료 → 그대로 (날짜 안 바뀜)", () => {
+          const { state } = runRollover(st([mk("a", "2026-11-13", { done: true, completedAt: "x" })]), TODAY, deps);
+          eq([state.todos[0].date, state.todos[0].carriedFrom], ["2026-11-13", null]);
+        });
+        test("어제 반복 미완료 → 삭제, 어제 반복 완료 → 남음", () => {
+          const todos = [mk("r-undone", "2026-11-13", { ruleId: "R" }), mk("r-done", "2026-11-13", { ruleId: "R", done: true })];
+          const { state } = runRollover(st(todos), TODAY, deps);
+          eq(state.todos.map((t) => t.id), ["r-done"]);
+        });
+        test("두 번 이월돼도 carriedFrom은 처음 날짜", () => {
+          const { state } = runRollover(st([mk("a", "2026-11-13", { carriedFrom: "2026-11-12" })]), TODAY, deps);
+          eq(state.todos[0].carriedFrom, "2026-11-12");
+        });
+        test("이월 항목은 맨 위, 원래 날짜 오래된 순, 같은 날짜면 기존 순서", () => {
+          const todos = [
+            mk("today1", TODAY, { order: 0 }),
+            mk("y-second", "2026-11-13", { order: 1 }),
+            mk("y-first", "2026-11-13", { order: 0 }),
+            mk("old", "2026-11-12", { order: 5 }),
+          ];
+          const { state } = runRollover(st(todos), TODAY, deps);
+          eq(activeIds(state), ["old", "y-first", "y-second", "today1"]);
+          ok(state.todos.filter((t) => t.date === TODAY && !t.done).sort((a, b) => a.order - b.order).every((t, i) => t.order === i), "order 연속");
+        });
+        test("평일 규칙은 토요일엔 안 생김, 매일 규칙은 생김", () => {
+          const { state } = runRollover(st([], [rl("weekday", "weekdays"), rl("daily", "daily")]), TODAY, deps);
+          eq(state.todos.map((t) => t.ruleId), ["daily"]);
+          eq(state.rules.map((r) => r.lastGeneratedDate), [null, TODAY]);
+        });
+        test("같은 날 두 번 실행해도 하나만 생기고, 두 번째는 changed=false", () => {
+          const first = runRollover(st([mk("a", "2026-11-13")], [rl("daily", "daily")]), TODAY, deps);
+          const second = runRollover(first.state, TODAY, deps);
+          eq(second.state.todos.filter((t) => t.ruleId === "daily").length, 1);
+          eq(second.changed, false);
+          eq(JSON.stringify(second.state), JSON.stringify(first.state));
+        });
+        test("일시정지 규칙은 안 생김", () => {
+          const { state } = runRollover(st([], [rl("daily", "daily", { paused: true })]), TODAY, deps);
+          eq(state.todos.length, 0);
+        });
+        test("반복 생성분은 이월 항목 바로 아래, 여러 규칙은 규칙 목록 순서대로", () => {
+          const todos = [mk("c1", "2026-11-12"), mk("c2", "2026-11-13"), mk("n1", TODAY, { order: 0 })];
+          seq = 0;
+          const { state } = runRollover(st(todos, [rl("R1", "daily"), rl("R2", "daily")]), TODAY, deps);
+          const ids = activeIds(state).map((id) => state.todos.find((t) => t.id === id).ruleId ?? id);
+          eq(ids, ["c1", "c2", "R1", "R2", "n1"]);
+        });
+        test("이월 2개 + 일반 3개일 때 새 할 일 자리는 3번째", () => {
+          const todos = [mk("c1", "2026-11-12"), mk("c2", "2026-11-13"), mk("a", TODAY, { order: 0 }), mk("b", TODAY, { order: 1 }), mk("c", TODAY, { order: 2 })];
+          const { state } = runRollover(st(todos), TODAY, deps);
+          const list = state.todos.filter((t) => t.date === TODAY && !t.done).sort((a, b) => a.order - b.order);
+          eq(insertIndex(list), 2);
+          eq(insertNew(list, { id: "new", carriedFrom: null }).map((t) => t.id), ["c1", "c2", "new", "a", "b", "c"]);
+        });
+        test("받은 state는 바꾸지 않음, lastOpenedDate는 오늘", () => {
+          const input = st([mk("a", "2026-11-13")], [rl("daily", "daily")]);
+          const before = JSON.stringify(input);
+          const { state } = runRollover(input, TODAY, deps);
+          eq(JSON.stringify(input), before);
+          eq(state.settings.lastOpenedDate, TODAY);
+        });
+        test("날짜가 거꾸로 가도(lastGeneratedDate가 미래) 다시 만들지 않음", () => {
+          const { state } = runRollover(st([], [rl("daily", "daily", { lastGeneratedDate: "2026-11-20" })]), TODAY, deps);
+          eq(state.todos.length, 0);
+        });
+      });
+
+      // ---------- text (검색·중복 확인) ----------
+      describe("text", () => {
+        test("normalizeText: 공백·대소문자 정리, 한글 NFD → NFC", () => {
+          eq(normalizeText("  Hello   World "), "hello world");
+          const nfd = "보고서".normalize("NFD");
+          ok(nfd.length !== 3, "NFD는 자모가 풀려 있어야 해요");
+          eq(normalizeText(nfd), "보고서");
+        });
+        test("parseQuery: 낱말로 나누고 중복 제거, 빈 검색어는 []", () => {
+          eq(parseQuery("  보고서   메일 보고서 "), ["보고서", "메일"]);
+          eq(parseQuery("   "), []);
+        });
+        test("matchesQuery: 모든 낱말이 들어 있어야 (AND), 순서 무관", () => {
+          eq(matchesQuery("월요일 보고서 메일 보내기", parseQuery("메일 보고서")), true);
+          eq(matchesQuery("월요일 보고서", parseQuery("보고서 메일")), false);
+          eq(matchesQuery("Report", parseQuery("rep")), true);
+          eq(matchesQuery("아무거나", []), true);
+        });
+        test("findMatchRanges: 겹치는 구간은 합치고, 원래 글자 위치", () => {
+          eq(findMatchRanges("Report 보고서 report", ["report"]), [{ start: 0, end: 6 }, { start: 11, end: 17 }]);
+          eq(findMatchRanges("abcdef", ["bcd", "cde"]), [{ start: 1, end: 5 }]);
+          eq(findMatchRanges("abc", []), []);
+        });
+        test("findDuplicateTodo: 같은 날 미완료만, 자기 자신·완료·다른 날은 제외", () => {
+          const todos = [
+            { id: "a", text: "보고서 마무리", date: "2026-11-16", done: false },
+            { id: "b", text: "장보기", date: "2026-11-16", done: true },
+            { id: "c", text: "운동", date: "2026-11-15", done: false },
+          ];
+          eq(findDuplicateTodo(todos, " 보고서  마무리 ", { date: "2026-11-16" })?.id, "a");
+          eq(findDuplicateTodo(todos, "보고서 마무리", { date: "2026-11-16", excludeId: "a" }), null);
+          eq(findDuplicateTodo(todos, "장보기", { date: "2026-11-16" }), null, "완료한 것은 중복 아님");
+          eq(findDuplicateTodo(todos, "운동", { date: "2026-11-16" }), null, "다른 날");
+          eq(findDuplicateTodo(todos, "   ", { date: "2026-11-16" }), null);
+        });
+        test("withParticle: 받침에 맞는 조사, 한글이 아니면 둘 다", () => {
+          eq([withParticle("업무", "을", "를"), withParticle("개인", "을", "를"), withParticle("공부", "이", "가")], ["업무를", "개인을", "공부가"]);
+          eq(withParticle("영어", "은", "는"), "영어는");
+          eq(withParticle("Meeting", "은", "는"), "Meeting은(는)");
+        });
+        test("findDuplicateRule: 이름이 같은 규칙, 자기 자신 제외", () => {
+          const rules = [{ id: "r1", text: "영단어 30개" }];
+          eq(findDuplicateRule(rules, "영단어  30개")?.id, "r1");
+          eq(findDuplicateRule(rules, "영단어 30개", { excludeId: "r1" }), null);
+        });
+      });
+
+      // ---------- sort (보기 정렬) ----------
+      describe("sort", () => {
+        const t = (id, category, createdAt) => ({ id, category, createdAt });
+        const active = [t("a", "study", "2026-11-03"), t("b", "work", "2026-11-01"), t("c", "personal", "2026-11-02"), t("d", "work", "2026-11-04")];
+        const done = [t("x", "personal", "2026-11-05"), t("y", "work", "2026-11-01")];
+        const ids = (l) => l.map((x) => x.id);
+        test("직접 정렬: 넘겨준 순서 그대로, 받은 배열은 그대로", () => {
+          const r = sortForView(active, done, "manual");
+          eq([r.merged, ids(r.active), ids(r.done)], [false, ["a", "b", "c", "d"], ["x", "y"]]);
+          ok(r.active !== active, "새 배열");
+        });
+        test("생성일순: 먼저 만든 것부터 (미완료·완료 각각)", () => {
+          const r = sortForView(active, done, "created");
+          eq([ids(r.active), ids(r.done)], [["b", "c", "a", "d"], ["y", "x"]]);
+        });
+        test("카테고리순: 업무 → 개인 → 공부, 같은 카테고리는 원래 순서", () => {
+          const r = sortForView(active, done, "category");
+          eq([ids(r.active), ids(r.done)], [["b", "d", "c", "a"], ["y", "x"]]);
+        });
+        test("완료 상태순: 한 목록으로 합쳐 미완료 먼저", () => {
+          const r = sortForView(active, done, "status");
+          eq([r.merged, ids(r.active), ids(r.done)], [true, ["a", "b", "c", "d", "x", "y"], []]);
+        });
+        test("받은 배열은 바꾸지 않음", () => {
+          const before = ids(active);
+          sortForView(active, done, "created");
+          sortForView(active, done, "category");
+          eq(ids(active), before);
+        });
+      });
+
+      // ---------- debounce ----------
+      describe("debounce", () => {
+        // 가짜 타이머: 시간을 직접 넘겨요
+        const fake = () => {
+          let now = 0, seq = 0;
+          const timers = new Map();
+          return {
+            set: (fn, ms) => { const id = ++seq; timers.set(id, { fn, at: now + ms }); return id; },
+            clear: (id) => timers.delete(id),
+            tick(ms) { now += ms; for (const [id, t] of [...timers]) if (t.at <= now) { timers.delete(id); t.fn(); } },
+          };
+        };
+        test("연달아 불러도 마지막 값으로 한 번만", () => {
+          const clock = fake(); const calls = [];
+          const d = debounce((v) => calls.push(v), 150, clock);
+          d("ㄱ"); clock.tick(100); d("가"); clock.tick(100); d("강"); clock.tick(149);
+          eq(calls, []);
+          clock.tick(1);
+          eq(calls, ["강"]);
+        });
+        test("flush는 바로 실행, cancel은 취소", () => {
+          const clock = fake(); const calls = [];
+          const d = debounce((v) => calls.push(v), 150, clock);
+          d("a"); d.flush();
+          eq(calls, ["a"]);
+          d.flush(); // 기다리는 것이 없으면 아무 일 없음
+          d("b"); d.cancel(); clock.tick(500);
+          eq(calls, ["a"]);
+        });
+      });
+
+      // ---------- trash (휴지통) ----------
+      describe("trash", () => {
+        const NOW = "2026-11-16T09:00:00.000Z";
+        let n = 0; const createId = () => "e" + ++n;
+        test("addToTrash: 최근 것이 앞, 같은 묶음 표시", () => {
+          const t1 = addToTrash([], "todo", [{ id: "a" }], { batchId: "b1", now: "2026-11-15T00:00:00.000Z", createId });
+          const t2 = addToTrash(t1, "todo", [{ id: "b" }, { id: "c" }], { batchId: "b2", now: NOW, createId });
+          eq(t2.map((e) => e.item.id), ["b", "c", "a"]);
+          eq(t2.map((e) => e.batchId), ["b2", "b2", "b1"]);
+          eq(t2[0].kind, "todo");
+        });
+        test("purgeTrash: 30일 지난 것 정리", () => {
+          const old = { id: "o", kind: "todo", item: {}, deletedAt: "2026-10-16T08:59:00.000Z", batchId: "x" };
+          const fresh = { id: "f", kind: "todo", item: {}, deletedAt: "2026-10-17T09:00:00.000Z", batchId: "y" };
+          eq(purgeTrash([old, fresh], NOW).map((e) => e.id), ["f"]);
+        });
+        test("purgeTrash: 100개를 넘으면 오래된 것부터", () => {
+          const many = Array.from({ length: 105 }, (_, i) => ({ id: "m" + i, kind: "todo", item: {}, deletedAt: new Date(Date.UTC(2026, 10, 16, 0, i)).toISOString(), batchId: "z" }));
+          const kept = purgeTrash(many, NOW);
+          eq(kept.length, 100);
+          eq([kept[0].id, kept[99].id], ["m104", "m5"]);
+        });
+        test("takeFromTrash: 고른 것과 나머지로 나눔", () => {
+          const trash = [{ id: "1", batchId: "a" }, { id: "2", batchId: "b" }, { id: "3", batchId: "a" }];
+          const { picked, rest } = takeFromTrash(trash, (e) => e.batchId === "a");
+          eq([picked.map((e) => e.id), rest.map((e) => e.id)], [["1", "3"], ["2"]]);
+        });
+      });
+
+      // ---------- classify (키워드 자동 분류) ----------
+      describe("classify", () => {
+        const K = { work: ["회의", "보고서", "Meeting"], personal: ["운동", "장보기"], study: ["영어", "영어 회화"] };
+        test("키워드가 들어 있으면 그 카테고리, 조사가 붙어도 찾음", () => {
+          eq(classify("팀 회의를 준비", K), { category: "work", keyword: "회의" });
+          eq(classify("저녁에 운동하기", K), { category: "personal", keyword: "운동" });
+        });
+        test("맞는 키워드가 없거나 내용이 비면 null", () => {
+          eq(classify("물 마시기", K), null);
+          eq(classify("   ", K), null);
+          eq(classify("회의", null), null);
+        });
+        test("대소문자·자모 형태(NFD) 무시", () => {
+          eq(classify("weekly MEETING", K)?.category, "work");
+          eq(classify("보고서".normalize("NFD") + " 쓰기", K)?.category, "work");
+        });
+        test("여러 개 걸리면 긴 키워드 우선", () => {
+          // "영어 회화"(5자, 공부)가 "회의"(2자, 업무)보다 길어서 이겨요
+          eq(classify("영어 회화 수업 회의", K), { category: "study", keyword: "영어 회화" });
+          eq(classify("보고서 운동", K), { category: "work", keyword: "보고서" });
+        });
+        test("길이가 같으면 앞에 나온 키워드, 그것도 같으면 카테고리 순서", () => {
+          eq(classify("운동 후 회의", K)?.category, "personal");
+          eq(classify("회의 후 운동", K)?.category, "work");
+          eq(classify("같은말", { work: ["같은말"], study: ["같은말"] })?.category, "work");
+        });
+        test("기본 키워드: 고친 적 없으면(null) 기본값", () => {
+          eq(effectiveKeywords(null), DEFAULT_CATEGORY_KEYWORDS);
+          eq(effectiveKeywords({ enabled: true, keywords: null }), DEFAULT_CATEGORY_KEYWORDS);
+          eq(effectiveKeywords({ enabled: true, keywords: K }), K);
+          ok(Object.values(DEFAULT_CATEGORY_KEYWORDS).flat().every((k) => k.length >= 2), "기본 키워드는 두 글자 이상");
+        });
+        test("기본 키워드로 흔한 예 분류", () => {
+          const D = DEFAULT_CATEGORY_KEYWORDS;
+          eq(["팀 회의 자료", "엄마 생일 선물", "영단어 30개", "책상 정리"].map((t) => classify(t, D)?.category ?? null), ["work", "personal", "study", null]);
+        });
+        test("parseKeywordInput: 쉼표로 나누고 공백·빈 것·중복·너무 긴 것 정리", () => {
+          eq(parseKeywordInput(" 회의 ,, 미팅,회의 , Meeting, meeting ,  보고  서 "), ["회의", "미팅", "Meeting", "보고 서"]);
+          eq(parseKeywordInput("가".repeat(21) + ",정상"), ["정상"]);
+          eq(parseKeywordInput(""), []);
+          eq(parseKeywordInput(Array.from({ length: 60 }, (_, i) => "k" + i).join(",")).length, 50);
+        });
+        test("normalizeKeywordMap: 이상한 값은 null, 빠진 카테고리는 빈 목록", () => {
+          eq(normalizeKeywordMap(null), null);
+          eq(normalizeKeywordMap([1, 2]), null);
+          eq(normalizeKeywordMap({ work: [" 회의 ", 3, "회의"] }), { work: ["회의"], personal: [], study: [] });
+        });
+        test("findKeywordConflicts: 여러 카테고리에 있는 키워드, 우선순위 순서", () => {
+          eq(findKeywordConflicts({ work: ["영어", "회의"], personal: [], study: ["영어"] }), [{ keyword: "영어", categories: ["work", "study"] }]);
+          eq(findKeywordConflicts(DEFAULT_CATEGORY_KEYWORDS), [], "기본 키워드에는 겹치는 것이 없어야 해요");
+        });
+      });
+
+      // ---------- 결과 표시 ----------
+      const failed = results.filter((r) => !r.ok);
+      const summary = failed.length === 0
+        ? `✅ 모두 통과 (${results.length}개)`
+        : `❌ ${failed.length}개 실패 / 전체 ${results.length}개`;
+
+      results.forEach((r) => {
+        const line = `${r.ok ? "✔" : "✘"} [${r.group}] ${r.name}${r.ok ? "" : " — " + r.message}`;
+        (r.ok ? console.log : console.error)(line);
+      });
+
+      if (typeof document !== "undefined") {
+        document.title = (failed.length === 0 ? "✅ " : "❌ ") + "core 테스트";
+        const summaryEl = document.getElementById("summary");
+        summaryEl.textContent = summary;
+        summaryEl.className = failed.length === 0 ? "pass" : "fail";
+
+        const container = document.getElementById("results");
+        for (const name of [...new Set(results.map((r) => r.group))]) {
+          const h2 = document.createElement("h2");
+          h2.textContent = name;
+          const ul = document.createElement("ul");
+          for (const r of results.filter((x) => x.group === name)) {
+            const li = document.createElement("li");
+            li.className = r.ok ? "pass" : "fail";
+            li.textContent = `${r.ok ? "✔" : "✘"} ${r.name}`;
+            if (!r.ok) {
+              const pre = document.createElement("pre");
+              pre.textContent = r.message;
+              li.append(pre);
+            }
+            ul.append(li);
+          }
+          container.append(h2, ul);
+        }
+      }
+      globalThis.__testSummary = { total: results.length, failed: failed.length };
+    </script>
+  </body>
+</html>

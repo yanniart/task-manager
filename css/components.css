@@ -1,0 +1,1173 @@
+/* 부품: 할 일 줄, 배지·표시, 진행률, 필터, 버튼, 바텀 시트, 반복 일정 목록
+   디자인 기준: docs/DESIGN-notion.md (TL-016) */
+
+/* ---------- 할 일 목록 ---------- */
+
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* 흰 카드 + 얇은 선. 그림자 없이 선만으로 면을 나눠요. */
+.todo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 56px;
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.todo__check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: transparent;
+}
+
+/* 보이는 동그라미는 24px, 누르는 영역은 44px */
+.todo__check svg {
+  box-sizing: content-box;
+  padding: 1px;
+  border: 2px solid var(--color-ink-muted);
+  border-radius: 50%;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.todo__check:active svg {
+  transform: scale(0.9);
+}
+
+.todo__check[aria-pressed="true"] {
+  color: var(--color-on-primary);
+}
+
+.todo__check[aria-pressed="true"] svg {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* 내용 전체가 수정 시트를 여는 버튼 (PRD F2) */
+.todo__body {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: left;
+}
+
+.todo__text {
+  overflow-wrap: anywhere;
+}
+
+/* 끝낸 일은 종이 위에 놓인 것처럼 흰 면을 빼고 흐리게 */
+.todo--done {
+  background: transparent;
+}
+
+.todo--done .todo__text {
+  color: var(--color-ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-ink-faint);
+}
+
+/* ---------- 드래그 손잡이 (PRD F10, TRD 5.6) ---------- */
+
+.todo__handle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-ink-muted);
+  cursor: grab;
+  touch-action: none; /* 손잡이를 끄는 동안 화면이 스크롤되지 않게 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.todo__handle:active {
+  background: var(--color-fill-soft);
+}
+
+/* 끄는 동안: 목록 글자 선택 막기, 비켜 주는 항목은 부드럽게 */
+.todo-list--dragging {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.todo-list--dragging .todo:not(.todo--dragging) {
+  transition: transform 0.15s ease;
+}
+
+/* 끌고 있는 항목: 살짝 떠오르게 (옅은 여러 겹 그림자) */
+.todo--dragging {
+  position: relative;
+  z-index: 5;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-2);
+  cursor: grabbing;
+}
+
+.todo--dragging .todo__handle {
+  cursor: grabbing;
+  color: var(--color-accent-text);
+}
+
+.todo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+/* ---------- 카테고리 배지: 무채색 알약 + 색 점 ---------- */
+
+.badge {
+  --cat: var(--color-ink-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+  color: var(--color-ink-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.125px;
+}
+
+/* 카테고리 점: 배지, 진행률, 필터, 시트의 카테고리 칩이 같은 모양을 써요 */
+.badge::before,
+.stat::before,
+.filter--work::before,
+.filter--personal::before,
+.filter--study::before,
+.chip--work .chip__label::before,
+.chip--personal .chip__label::before,
+.chip--study .chip__label::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat);
+}
+
+.badge--work,
+.stat--work,
+.chip--work,
+.filter--work {
+  --cat: var(--cat-work);
+}
+
+.badge--personal,
+.stat--personal,
+.chip--personal,
+.filter--personal {
+  --cat: var(--cat-personal);
+}
+
+.badge--study,
+.stat--study,
+.chip--study,
+.filter--study {
+  --cat: var(--cat-study);
+}
+
+/* 🔁 반복, 이월 11/10, 일시정지됨 같은 작은 표시 */
+.tag {
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0.125px;
+}
+
+.tag--carried {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-carried-soft);
+  color: var(--color-carried);
+}
+
+.tag--paused {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-canvas);
+}
+
+/* ---------- 진행률 (PRD F6) ---------- */
+
+.progress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-fill-soft);
+}
+
+.progress__fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width 0.3s ease, background-color 0.3s;
+}
+
+.progress--complete .progress__fill {
+  background: var(--color-success);
+}
+
+.progress-panel__text {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.125px;
+}
+
+.category-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat__label {
+  color: var(--color-ink-secondary);
+  font-weight: 500;
+}
+
+/* 할 일이 없는 카테고리: 점만 흐리게, 글자는 흐린 글자색(대비 4.5:1 이상 유지). opacity를 쓰면 대비가 떨어져요. */
+.stat--empty .stat__label {
+  color: var(--color-ink-muted);
+  font-weight: 400;
+}
+
+.stat--empty::before {
+  opacity: 0.35;
+}
+
+/* 축하 문구: 떠 있는 흰 카드 (알림 모양) */
+.banner {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.banner--pop {
+  animation: banner-pop 0.4s ease-out;
+}
+
+@keyframes banner-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ---------- 필터 탭 (PRD F5): 한 줄에 네 개, 알약 모양 세그먼트 ---------- */
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  background: var(--color-fill-soft);
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--touch);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* 고른 탭: 흰 알약 + 파랑 글자 (파랑 = 선택 표시) */
+.filter[aria-pressed="true"] {
+  background: var(--color-surface);
+  color: var(--color-accent-text);
+  font-weight: 600;
+  box-shadow: var(--shadow-1), 0 0 0 1px var(--color-hairline);
+}
+
+/* ---------- 목록 구역 ---------- */
+
+/* 빈 상태: 흰 카드에 조용한 안내 */
+.empty-message {
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--color-hairline);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
+  font-size: 15px;
+  text-align: center;
+}
+
+.done-section,
+.prev-section {
+  margin-top: var(--space-5);
+}
+
+/* 구역 제목: 작은 글자 + 얇은 선 */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.125px;
+}
+
+.section-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-hairline);
+}
+
+/* ---------- 이전에 완료한 항목 (접힘) ---------- */
+
+.prev-section__summary {
+  min-height: var(--touch);
+  margin-bottom: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  list-style: none;
+}
+
+.prev-section__summary::-webkit-details-marker {
+  display: none;
+}
+
+.prev-section__summary::before {
+  content: "▸";
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+
+.prev-section[open] .prev-section__summary::before {
+  transform: rotate(90deg);
+}
+
+.list-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
+/* ---------- 버튼 ---------- */
+
+/* 기본: 알약 모양 */
+.btn {
+  min-height: var(--touch);
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--radius-full);
+  font-size: 16px;
+  font-weight: 500;
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* 주요 버튼: 파랑 알약 (화면마다 하나) */
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.btn--primary:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.btn--primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 보조 버튼: 흰 알약 + 옅은 그림자 */
+.btn--ghost {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-1), 0 0 0 1px var(--color-hairline);
+}
+
+/* 삭제: 색 있는 글자만 */
+.btn--danger {
+  padding: 0 var(--space-3);
+  background: none;
+  color: var(--color-danger);
+}
+
+/* 작은 보조 버튼 (반복 일정의 일시정지·삭제): 8px 모서리 + 얇은 선 */
+.btn--small {
+  flex: none;
+  min-width: var(--touch);
+  padding: 4px 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  font-size: 14px;
+}
+
+.btn--small.btn--danger {
+  color: var(--color-danger);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--text {
+  padding: 0 var(--space-3);
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+.btn--text:active {
+  background: var(--color-fill-soft);
+}
+
+/* 동그란 아이콘 버튼 (☰, ←) */
+.icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-ink);
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.icon-btn:active {
+  background: var(--color-fill-soft);
+  transform: scale(0.9);
+}
+
+/* 떠 있는 + 버튼: 헤더 아이콘처럼 흑백 (TL-020).
+   라이트는 검은 원 + 흰 +, 다크는 흰 원 + 검은 + (글자색과 바탕색을 뒤집어 써요) */
+.fab {
+  display: grid;
+  place-items: center;
+  width: var(--fab-size);
+  height: var(--fab-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  box-shadow: var(--shadow-2);
+  transition: transform 0.1s, background-color 0.15s;
+}
+
+.fab:active {
+  background: var(--color-ink-secondary);
+  transform: scale(0.9);
+}
+
+/* ---------- 바텀 시트 ---------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-backdrop);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.sheet-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: 0;
+  width: 100%;
+  max-width: var(--content-max);
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 좌우 16px: 360px 화면에서 요일 7칸이 각각 44px 이상 되려면 이보다 넓힐 수 없어요 */
+  padding: var(--space-5) calc(var(--space-4) + env(safe-area-inset-right))
+    calc(var(--space-5) + env(safe-area-inset-bottom)) calc(var(--space-4) + env(safe-area-inset-left));
+  background: var(--color-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-sheet);
+  transform: translate(-50%, 100%);
+  visibility: hidden;
+  /* 닫힐 때는 내려간 뒤 숨기고, 열 때는 바로 보이게 (열자마자 입력창에 포커스하기 위해) */
+  transition: transform 0.25s ease, visibility 0s linear 0.25s;
+}
+
+.sheet.is-open {
+  transform: translate(-50%, 0);
+  visibility: visible;
+  transition: transform 0.25s ease, visibility 0s;
+}
+
+.sheet__title {
+  margin-bottom: var(--space-4);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.125px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  color: var(--color-ink-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 입력창: 모서리 4px로 단정하게 (알약 모양 아님) */
+.field__input {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 6px 10px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+  font-size: 16px; /* 16px보다 작으면 iPhone이 확대해요 */
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field__input::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.field__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft), var(--shadow-1);
+}
+
+.field__count {
+  align-self: flex-end;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+}
+
+.field--choices {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.field--choices .field__label {
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+/* 선택 칩: 라디오·체크박스를 알약 모양으로. 고르면 파랑 테두리 + 옅은 파랑 바탕 */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: var(--touch);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.chip__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip__input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* 글자는 진한 파랑: 옅은 파랑 바탕 위에서도 대비 4.5:1 이상 */
+.chip:has(.chip__input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-accent-text-strong);
+  font-weight: 600;
+}
+
+.chip:has(.chip__input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 반복 종류: 보이는 개수만큼 칸을 나눠요 (반복 일정 화면에서는 '안 함'이 숨어서 3칸) */
+.chips--4 {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+/* 요일 7개: 360px 화면에서도 칸마다 44px 이상이 되도록 간격을 좁게 */
+.chips--days {
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-top: var(--space-2);
+}
+
+.chip--day {
+  min-width: 0;
+}
+
+/* 반복 할 일을 수정할 때의 안내 */
+.repeat-note {
+  margin-top: var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+.repeat-note__link {
+  width: 100%;
+  min-height: var(--touch);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  color: var(--color-ink-secondary);
+  font-size: 14px;
+  text-align: left;
+}
+
+/* 종이색 바탕 위라 진한 파랑 (그냥 파랑은 4.19:1) */
+.repeat-note__link strong {
+  color: var(--color-accent-text-strong);
+  font-weight: 600;
+}
+
+.sheet__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+.sheet__spacer {
+  flex: 1;
+}
+
+/* ---------- 반복 일정 관리 목록 ---------- */
+
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 56px;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.rule__body {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.rule__text {
+  overflow-wrap: anywhere;
+}
+
+.rule__summary {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+
+.rule--paused {
+  background: transparent;
+}
+
+.rule--paused .rule__text {
+  color: var(--color-ink-muted);
+}
+
+.rule--highlight {
+  animation: rule-highlight 2s ease-out;
+}
+
+@keyframes rule-highlight {
+  0%,
+  40% {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft), var(--shadow-1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.rules-view__hint {
+  margin: var(--space-4) 0;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet.is-open,
+  .sheet-backdrop,
+  .btn,
+  .fab,
+  .icon-btn,
+  .todo-list--dragging .todo:not(.todo--dragging) {
+    transition: none;
+  }
+}
+
+/* ---------- 검색 (PRD F13) ---------- */
+
+.icon-btn.is-active {
+  background: var(--color-fill-soft);
+  color: var(--color-accent-text);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.search-bar__input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 검색어와 맞는 부분 강조: 옅은 노랑 대신 파랑 밑줄+옅은 파랑 (색 하나 원칙) */
+.todo__match {
+  border-radius: 2px;
+  background: var(--color-primary-soft);
+  color: inherit;
+  box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+
+/* ---------- 목록 도구 줄: 검색 결과 수 + 정렬 아이콘 (PRD F13·F14, TL-022) ---------- */
+
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: calc(var(--space-1) * -1) 0 var(--space-1);
+}
+
+.list-toolbar__info {
+  min-width: 0;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+.sort-control {
+  position: relative;
+  margin-left: auto;
+  margin-right: calc(var(--space-1) * -1);
+}
+
+/* 아이콘만 있는 작은 버튼 (헤더 아이콘처럼 흑백). 직접 정렬이 아니면 파랑 + 정렬 이름 */
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: var(--touch);
+  min-height: var(--touch);
+  justify-content: center;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.sort-button:active {
+  background: var(--color-fill-soft);
+  transform: scale(0.95);
+}
+
+/* 옅은 파랑 바탕 위라 진한 파랑 글자 (그냥 파랑은 3.78:1) */
+.sort-button.is-active,
+.sort-button[aria-expanded="true"] {
+  color: var(--color-accent-text-strong);
+  background: var(--color-primary-soft);
+}
+
+/* 정렬 메뉴: 아이콘 아래 오른쪽에 붙는 작은 카드 */
+.sort-menu {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  width: max-content;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-2);
+}
+
+.sort-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  text-align: left;
+}
+
+.sort-menu__item:hover,
+.sort-menu__item:focus-visible {
+  background: var(--color-fill-soft);
+}
+
+.sort-menu__check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  color: transparent;
+}
+
+.sort-menu__item[aria-checked="true"] .sort-menu__check {
+  color: var(--color-accent-text-strong);
+}
+
+.sort-menu__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sort-menu__label {
+  font-weight: 500;
+}
+
+/* 포커스 바탕(옅은 회색) 위에서도 4.5:1 넘게 진한 파랑 */
+.sort-menu__item[aria-checked="true"] .sort-menu__label {
+  color: var(--color-accent-text-strong);
+  font-weight: 600;
+}
+
+.sort-menu__hint {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+
+/* ---------- 중복 경고 (PRD F16) ---------- */
+
+.field__warning {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-carried-soft);
+  color: var(--color-carried);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ---------- 더보기: 정렬 선택지·데이터·휴지통 ---------- */
+
+.more-section + .more-section {
+  margin-top: var(--space-6);
+}
+
+.more-section .section-divider {
+  margin-bottom: var(--space-3);
+  font-size: 14px;
+}
+
+.more-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.trash-item .rule__body {
+  cursor: default;
+}
+
+/* ---------- 알림(토스트) ---------- */
+
+.toast {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  /* 떠 있는 + 버튼 위에 */
+  bottom: calc(var(--fab-size) + var(--space-5) + var(--space-3) + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: min(calc(100vw - 32px), calc(var(--content-max) - 32px));
+  min-height: var(--touch);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  box-shadow: var(--shadow-2);
+  font-size: 15px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.toast__message {
+  padding: var(--space-2) 0;
+}
+
+.toast__action {
+  flex: none;
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  color: var(--color-canvas);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.toast__action:active {
+  background: rgb(127 127 127 / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+}
+
+/* ---------- 자동 분류 (PRD F18) ---------- */
+
+/* 시트: 카테고리 칩 아래 "'회의' 키워드로 업무를 골랐어요" */
+.field__hint {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+
+/* 더보기: 켜기·끄기 줄 */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.switch-row__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.switch-row__label {
+  font-weight: 500;
+}
+
+.switch-row__hint {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+
+/* 스위치: 체크박스를 알약 모양으로. 켜지면 파랑 (구조 색) */
+.switch {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-input-border);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-on-primary);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+
+.switch:checked {
+  background: var(--color-primary);
+}
+
+.switch:checked::after {
+  transform: translateX(18px);
+}
+
+/* 스위치는 44×26이라 눌리는 곳은 줄 전체(label)로 넉넉히 둬요 */
+
+.keyword-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.keyword-fields:disabled {
+  opacity: 0.55;
+}
+
+.keyword-field__input {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.keyword-field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 카테고리 점 (배지와 같은 모양) */
+.keyword-field__label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat);
+}
+
+.more-section .field__warning {
+  margin-top: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch::after {
+    transition: none;
+  }
+}

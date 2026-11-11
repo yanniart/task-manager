@@ -1,0 +1,5 @@
+# 줄 끝을 LF로 맞춰요 (Windows·Mac 어디서 받아도 같게, GitHub Pages에 그대로 올라가게)
+* text=auto eol=lf
+
+# 이미지는 글자 파일이 아니에요
+*.png binary

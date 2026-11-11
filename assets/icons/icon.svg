@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 앱 아이콘 (일반): 둥근 파랑 사각형 + 흰 체크. PNG는 이 파일을 그려서 만들어요 (TL-018). -->
+  <rect width="512" height="512" rx="112" fill="#0075de"/>
+  <path d="M146 266l76 76 144-160" fill="none" stroke="#ffffff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

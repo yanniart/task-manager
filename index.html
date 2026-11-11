@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- 주소창·상태 표시줄 색: 바탕색과 같게 (다크 모드면 어두운 바탕색) -->
+    <meta name="theme-color" content="#f6f5f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="매일 10~20개의 할 일을 관리하는 개인용 앱" />
+    <title>오늘의 할 일</title>
+
+    <!-- PWA: 홈 화면 추가·오프라인 (TRD 5.8) -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./assets/icons/icon-192.png" type="image/png" sizes="192x192" />
+    <!-- iPhone 홈 화면용 (iOS는 manifest 아이콘 대신 이것을 써요) -->
+    <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="할 일" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- 화면을 그리기 전에 저장된 화면 모드를 적용해요 (깜빡임 방지, PRD F12).
+         js/ui/theme.js와 같은 규칙: 다크를 골랐거나, '시스템'인데 시스템이 다크면 data-theme="dark" -->
+    <script>
+      (function () {
+        var theme = "system";
+        try {
+          theme = JSON.parse(localStorage.getItem("task-manager")).settings.theme || "system";
+        } catch (e) {}
+        var dark = theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
+    <link rel="stylesheet" href="./css/base.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./css/components.css" />
+    <script type="module" src="./js/main.js"></script>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="app-header">
+        <div class="app-header__top">
+          <!-- 버튼이 4개라 좁은 화면을 위해 날짜는 제목 아래 줄에 둬요 (TL-021) -->
+          <div class="app-header__heading">
+            <h1 class="app-header__title">오늘의 할 일</h1>
+            <time class="app-header__date" id="today-date"></time>
+          </div>
+          <div class="app-header__actions">
+            <!-- 검색 (PRD F13) -->
+            <button type="button" class="icon-btn" id="search-button" aria-label="할 일 검색" title="할 일 검색" aria-expanded="false" aria-controls="search-bar">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="M15.5 15.5L20.5 20.5" />
+              </svg>
+            </button>
+            <!-- 화면 모드 (PRD F12): 아이콘·이름은 js/ui/theme.js가 지금 모드에 맞춰 채워요 -->
+            <button type="button" class="icon-btn" id="theme-button" aria-label="화면 모드"></button>
+            <!-- 반복 일정 관리 (PRD F8): 반복 할 일의 🔁 표시와 같은 모양 -->
+            <button type="button" class="icon-btn" id="rules-button" aria-label="반복 일정 관리" title="반복 일정 관리">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 2.5l3.5 3.5-3.5 3.5" />
+                <path d="M3.5 11V10a4 4 0 0 1 4-4h13" />
+                <path d="M7 21.5L3.5 18 7 14.5" />
+                <path d="M20.5 13v1a4 4 0 0 1-4 4h-13" />
+              </svg>
+            </button>
+            <!-- 더보기: 자동 분류·내보내기/가져오기·휴지통 (PRD F18, F15, F17) -->
+            <button type="button" class="icon-btn" id="more-button" aria-label="더보기 (자동 분류·데이터·휴지통)" title="더보기">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="currentColor">
+                <circle cx="5" cy="12" r="1.9" />
+                <circle cx="12" cy="12" r="1.9" />
+                <circle cx="19" cy="12" r="1.9" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 검색창 (PRD F13): 🔍를 누르면 열려요 -->
+        <div class="search-bar" id="search-bar" role="search" hidden>
+          <input
+            class="field__input search-bar__input"
+            id="search-input"
+            type="search"
+            placeholder="할 일 검색"
+            aria-label="할 일 검색"
+            autocomplete="off"
+            enterkeyhint="search"
+          />
+          <button type="button" class="icon-btn" id="search-close" aria-label="검색 닫기" title="검색 닫기">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <section class="progress-panel" aria-label="오늘의 진행률">
+          <div
+            class="progress"
+            id="progress-bar"
+            role="progressbar"
+            aria-label="오늘의 진행률"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <div class="progress__fill" id="progress-fill"></div>
+          </div>
+          <p class="progress-panel__text" id="progress-text"></p>
+          <ul class="category-stats" id="category-stats" aria-label="카테고리별 진행률"></ul>
+          <p class="banner" id="celebration" role="status" hidden>🎉 오늘 할 일을 모두 끝냈어요!</p>
+        </section>
+
+        <div class="filters" id="filters" role="group" aria-label="카테고리 필터"></div>
+      </header>
+
+      <main class="app-main" id="lists">
+        <!-- 목록 도구 줄: 왼쪽 검색 결과 수(F13), 오른쪽 정렬 아이콘(F14, TL-022) -->
+        <div class="list-toolbar">
+          <p class="list-toolbar__info" id="search-info" role="status" hidden></p>
+          <div class="sort-control">
+            <button
+              type="button"
+              class="sort-button"
+              id="sort-button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="sort-menu"
+              aria-label="정렬: 직접 정렬"
+              title="정렬"
+            >
+              <!-- 위·아래 화살표 (헤더 아이콘과 같은 선 굵기) -->
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 4v16M4.5 7.5L8 4l3.5 3.5" />
+                <path d="M16 20V4M12.5 16.5L16 20l3.5-3.5" />
+              </svg>
+              <!-- 직접 정렬이 아닐 때만 정렬 이름이 보여요 -->
+              <span class="sort-button__label" id="sort-label" hidden></span>
+            </button>
+            <ul class="sort-menu" id="sort-menu" role="menu" aria-label="정렬" hidden></ul>
+          </div>
+        </div>
+        <ul class="todo-list" id="active-list" aria-label="할 일"></ul>
+        <p class="empty-message" id="empty-message" hidden></p>
+        <!-- 드래그 손잡이 안내와 옮긴 결과: 화면 읽기 프로그램용 (TRD 7장) -->
+        <p class="sr-only" id="drag-hint">끌어서 옮기거나, 위·아래 화살표 키로 한 칸씩 옮겨요</p>
+        <!-- 순서 옮김·화면 모드 바꿈 등의 결과를 화면 읽기 프로그램에 알려요 -->
+        <p class="sr-only" id="live-status" aria-live="polite"></p>
+
+        <section class="done-section" id="done-section" aria-labelledby="done-heading" hidden>
+          <h2 class="section-divider" id="done-heading">완료 (<span id="done-count">0</span>)</h2>
+          <ul class="todo-list" id="done-list" aria-label="완료한 할 일"></ul>
+        </section>
+
+        <details class="prev-section" id="prev-section" hidden>
+          <summary class="section-divider prev-section__summary">
+            이전에 완료한 항목 (<span id="prev-count">0</span>)
+          </summary>
+          <ul class="todo-list" id="prev-list" aria-label="이전에 완료한 할 일"></ul>
+        </details>
+
+        <div class="list-actions">
+          <button type="button" class="btn btn--text" id="clear-completed" hidden>
+            완료한 항목 모두 지우기
+          </button>
+        </div>
+      </main>
+
+      <button type="button" class="fab" id="add-button" aria-label="할 일 추가">
+        <!-- 헤더 아이콘과 같은 선 굵기(2)의 + -->
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+          <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <section class="rules-view" id="rules-view" role="dialog" aria-modal="true" aria-labelledby="rules-title" hidden>
+      <header class="rules-view__header">
+        <button type="button" class="icon-btn" id="rules-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <h2 class="rules-view__title" id="rules-title">반복 일정 관리</h2>
+      </header>
+      <div class="rules-view__body">
+        <ul class="rule-list" id="rule-list" aria-label="반복 일정"></ul>
+        <p class="empty-message" id="rules-empty">아직 반복 일정이 없어요</p>
+        <p class="rules-view__hint">반복 일정을 고치면 다음에 생기는 할 일부터 바뀌어요. 지워도 이미 생긴 할 일은 남아요.</p>
+        <button type="button" class="btn btn--primary btn--block" id="rules-add">+ 새 반복 일정</button>
+      </div>
+    </section>
+
+    <!-- 더보기 (PRD F18 자동 분류, F15 내보내기·가져오기, F17 휴지통). 정렬은 목록 위 아이콘으로 옮겼어요 (TL-022) -->
+    <section class="rules-view more-view" id="more-view" role="dialog" aria-modal="true" aria-labelledby="more-title" hidden>
+      <header class="rules-view__header">
+        <button type="button" class="icon-btn" id="more-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <h2 class="rules-view__title" id="more-title">더보기</h2>
+      </header>
+      <div class="rules-view__body">
+        <section class="more-section" aria-labelledby="auto-title">
+          <h3 class="section-divider" id="auto-title">자동 분류</h3>
+          <label class="switch-row">
+            <span class="switch-row__text">
+              <span class="switch-row__label">키워드로 카테고리 자동 선택</span>
+              <span class="switch-row__hint">할 일을 추가할 때 내용에 키워드가 있으면 카테고리를 골라 줘요</span>
+            </span>
+            <input type="checkbox" class="switch" id="auto-enabled" role="switch" />
+          </label>
+          <fieldset class="keyword-fields" id="keyword-fields">
+            <legend class="sr-only">카테고리별 키워드</legend>
+          </fieldset>
+          <p class="field__warning" id="keyword-conflicts" role="status" hidden></p>
+          <p class="rules-view__hint">쉼표로 구분해요. 입력을 마치면(다른 곳을 누르면) 저장돼요. 직접 고른 카테고리가 언제나 우선이에요.</p>
+          <button type="button" class="btn btn--text" id="keywords-reset">기본 키워드로 되돌리기</button>
+        </section>
+
+        <section class="more-section" aria-labelledby="data-title">
+          <h3 class="section-divider" id="data-title">데이터</h3>
+          <div class="more-actions">
+            <button type="button" class="btn btn--ghost btn--block" id="export-button">JSON으로 내보내기</button>
+            <button type="button" class="btn btn--ghost btn--block" id="import-button">JSON 가져오기</button>
+            <input type="file" id="import-file" accept=".json,application/json" hidden />
+          </div>
+          <p class="rules-view__hint">가져오면 지금 데이터가 가져온 파일로 바뀌어요. 바뀌기 전 데이터는 자동으로 백업해 두고, 바로 되돌릴 수 있어요.</p>
+        </section>
+
+        <section class="more-section" aria-labelledby="trash-title">
+          <h3 class="section-divider" id="trash-title">휴지통 (<span id="trash-count">0</span>)</h3>
+          <ul class="rule-list" id="trash-list" aria-label="지운 항목"></ul>
+          <p class="empty-message" id="trash-empty">휴지통이 비어 있어요</p>
+          <p class="rules-view__hint">지운 할 일·반복 일정은 30일 동안(최대 100개) 여기 남아요.</p>
+          <button type="button" class="btn btn--text" id="trash-empty-button" hidden>휴지통 비우기</button>
+        </section>
+      </div>
+    </section>
+
+    <div class="sheet-backdrop" id="sheet-backdrop"></div>
+    <section
+      class="sheet"
+      id="todo-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sheet-title"
+      inert
+    >
+      <form class="sheet__form" id="todo-form" novalidate>
+        <h2 class="sheet__title" id="sheet-title">할 일 추가</h2>
+
+        <div class="field">
+          <label class="field__label" for="todo-text">할 일</label>
+          <input
+            class="field__input"
+            id="todo-text"
+            name="text"
+            type="text"
+            maxlength="100"
+            autocomplete="off"
+            enterkeyhint="done"
+            placeholder="무엇을 할까요?"
+          />
+          <p class="field__count" aria-live="polite"><span id="todo-count">0</span>/100</p>
+          <!-- 중복 확인 (PRD F16): 막지 않고 알려만 줘요 -->
+          <p class="field__warning" id="dup-warning" role="status" hidden></p>
+        </div>
+
+        <fieldset class="field field--choices">
+          <legend class="field__label">카테고리</legend>
+          <div class="chips" id="sheet-categories"></div>
+          <!-- 키워드 자동 분류 안내 (PRD F18) -->
+          <p class="field__hint" id="auto-category-hint" role="status" hidden></p>
+        </fieldset>
+
+        <fieldset class="field field--choices" id="repeat-field">
+          <legend class="field__label">반복</legend>
+          <div class="chips chips--4" id="repeat-types"></div>
+          <div class="chips chips--days" id="repeat-days" role="group" aria-label="반복할 요일" hidden></div>
+        </fieldset>
+
+        <!-- 반복으로 생긴 할 일을 수정할 때만 보여요 (TRD 5.9) -->
+        <p class="repeat-note" id="repeat-note" hidden></p>
+
+        <div class="sheet__actions">
+          <button type="button" class="btn btn--danger" id="sheet-delete" hidden>삭제</button>
+          <span class="sheet__spacer"></span>
+          <button type="button" class="btn btn--ghost" data-sheet-close>취소</button>
+          <button type="submit" class="btn btn--primary" id="sheet-save" disabled>저장</button>
+        </div>
+      </form>
+    </section>
+    <!-- 짧은 알림 + 되돌리기 (PRD F17). 화면 읽기 프로그램에도 읽혀요 -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <span class="toast__message" id="toast-message"></span>
+      <button type="button" class="toast__action" id="toast-action" hidden></button>
+    </div>
+  </body>
+</html>
