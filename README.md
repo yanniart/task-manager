@@ -116,7 +116,8 @@ localhost에서 한 번 열면 서비스 워커가 앱 파일을 **캐시 먼저
 | [docs/DESIGN-notion.md](docs/DESIGN-notion.md) | 디자인 기준 (색, 글자, 모양) |
 | [docs/dev-log.md](docs/dev-log.md) | 날짜별 개발 기록과 진행 현황 |
 | [docs/tech-log.md](docs/tech-log.md) | 기술 결정과 이유 (TL-xxx) |
-| [docs/prompts.md](docs/prompts.md) | 클로드 코드로 개발할 때 쓰는 5단계 프롬프트 |
+| [docs/roadmap.md](docs/roadmap.md) | 차후 계획: 지난 기록 통계, 달력 보기, 기기 간 동기화, 알림 |
+| [docs/prompts.md](docs/prompts.md) | 클로드 코드로 이어서 작업할 때 쓰는 프롬프트 (+ 처음 1~5단계 기록) |
 
 ## 폴더 구조
 
@@ -131,7 +132,8 @@ task-manager/
 │   └── ui/         # 화면 그리기, 시트, 반복 일정 관리, 드래그, 검색창, 더보기, 알림
 ├── assets/icons/   # 앱 아이콘 (SVG 원본 + PNG)
 ├── tests/      # core 테스트(브라우저·Node), store 확인, 브라우저 확인(e2e/)
-└── docs/       # PRD, TRD, 디자인, 개발로그, 기술로그
+├── tools/      # make-icons.mjs: 아이콘 SVG → PNG
+└── docs/       # PRD, TRD, 디자인, 개발로그, 기술로그, 차후 계획, 프롬프트
 ```
 
 자세한 설명과 규칙은 [TRD 3장](docs/TRD.md#3-폴더-구조)에 있어요.

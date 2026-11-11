@@ -83,11 +83,17 @@ task-manager/
 │   ├── store.test.mjs       # store·storage 확인 (Node, 가짜 localStorage)
 │   └── e2e/                 # 브라우저 확인: run.mjs(실행기), harness.js, audit.js, steps/*.js (8장)
 │
+├── tools/
+│   └── make-icons.mjs       # 아이콘 SVG → PNG (헤드리스 Chrome, 5.8)
+│
 └── docs/
     ├── PRD.md               # 무엇을 만드는지
     ├── TRD.md               # 어떻게 만드는지 (이 문서)
+    ├── DESIGN-notion.md     # 디자인 기준 (6장)
     ├── dev-log.md           # 날짜별 개발 기록
-    └── tech-log.md          # 기술 결정 기록
+    ├── tech-log.md          # 기술 결정 기록
+    ├── roadmap.md           # 차후 계획 (기록·통계·달력·동기화·알림)
+    └── prompts.md           # 클로드 코드 프롬프트
 ```
 
 ### 의존 방향
@@ -293,7 +299,7 @@ export function createId() {
 - **새 파일을 만들면 `sw.js`의 `APP_FILES`에도 넣어요.** 빠지면 오프라인에서 그 파일만 못 불러와요.
 - 옛 캐시는 `tm-cache-`로 시작하는 것만 지워요(같은 github.io 주소의 다른 앱 캐시 보호). `tests/`는 캐시하지 않아요.
 - 등록은 `window.isSecureContext`(HTTPS·localhost)일 때만. PC IP 주소(`http://`)에서는 건너뛰어요.
-- 아이콘 원본은 `assets/icons/icon.svg`, `icon-maskable.svg`이고 PNG는 여기서 만들어요. iPhone용 `apple-touch-icon.png`(180px)도 있어요 ([TL-018](tech-log.md#tl-018)).
+- 아이콘 원본은 `assets/icons/icon.svg`, `icon-maskable.svg`이고 PNG는 `node tools/make-icons.mjs`로 만들어요(`--out=폴더`로 따로 만들어 비교 가능). iPhone용 `apple-touch-icon.png`(180px)도 있어요 ([TL-018](tech-log.md#tl-018)).
 
 ### 5.9 추가/수정 시트 (`ui/sheet.js`)
 

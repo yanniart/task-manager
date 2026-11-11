@@ -10,7 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `docs/PRD.md` — 기능(F1~F11, F9는 제거된 번호라 비워 둠), 화면, 마일스톤 M1~M8
 - `docs/TRD.md` — 폴더 구조, 의존 방향, 데이터 모델, 핵심 로직(5장), 테스트(8장)
 - `docs/tech-log.md` — 기술 결정 TL-001~TL-011과 이유
-- `docs/prompts.md` — 마일스톤을 5단계로 묶은 작업 프롬프트. 각 단계의 "하지 말 것"(다음 단계 기능을 미리 만들지 않기)을 지킬 것
+- `docs/roadmap.md` — 차후 계획(R0 지난 기록, R1 통계, R2 달력, R3 동기화, R4 알림). 확정 전이라 시작할 때 PRD에 기능 번호를 붙이고 "정해야 할 것"을 먼저 물어볼 것. R3·R4는 서버가 필요해 원칙(서버·외부 요청 없음)을 바꾸는 결정
+- `docs/prompts.md` — 이어서 작업할 때 쓰는 프롬프트. 처음 1~5단계 프롬프트는 끝난 기록이라 그대로 따르지 말 것
 
 ## 실행·테스트
 
@@ -62,7 +63,7 @@ BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deploye
 - 사용자 입력은 `textContent`로만 DOM에 넣는다 (`innerHTML` 금지). 이벤트는 목록 부모에 위임하고 `data-id`로 찾음.
 - PWA: 모든 경로는 상대 경로(`./`) — GitHub Pages 하위 경로 `/task-manager/` 대응. **앱 파일을 고치면 `sw.js`의 `CACHE_VERSION`을 올리고, 새 파일은 `APP_FILES`에 추가할 것.** 서비스 워커 등록은 `isSecureContext`(HTTPS/localhost)에서만. 캐시 먼저라 localhost에서도 고친 파일이 바로 안 보일 수 있음 (헤드리스 확인은 매번 새 프로필로 하면 문제없음).
 - 다크 모드는 `base.css`의 `:root[data-theme="dark"]` 변수 한 곳만. `data-theme`(light/dark)은 JS가 정함: 저장값 `settings.theme`(system/light/dark, PRD F12) + 시스템 설정. `index.html` 머리의 인라인 스크립트와 `ui/theme.js`가 같은 규칙이라 바꿀 땐 두 곳 모두 (TL-019). 파랑 글자는 `--color-accent-text(-strong)`, 파랑 면은 `--color-primary`. 흐린 표시에 `opacity` 쓰지 말 것(대비 저하, TL-018).
-- 아이콘 PNG는 `assets/icons/*.svg`를 헤드리스 Chrome으로 그려 만든 것. 아이콘을 바꾸면 SVG를 고치고 PNG를 다시 만들 것.
+- 아이콘 PNG는 `node tools/make-icons.mjs`로 `assets/icons/*.svg`에서 만듦(헤드리스 Chrome). 아이콘을 바꾸면 SVG를 고치고 이걸 돌린 뒤 `CACHE_VERSION`을 올릴 것.
 - 모바일: 터치 영역 44px 이상, 입력 글자 16px 이상, `env(safe-area-inset-*)`, 다크 모드는 `prefers-color-scheme`로 `base.css` 변수만 바꿈.
 - 디자인 기준은 `docs/DESIGN-notion.md` (TL-016, TRD 6장): 종이색 바탕 + 흰 카드 + 얇은 선. **버튼·면을 칠하는 색은 `--color-primary` 하나**이고, 카테고리 색(`--cat-*`)은 작은 색 점에만 씀. 새 색을 하드코딩하지 말고 `base.css` 변수를 쓸 것. 글자 대비 4.5:1 이상(`--color-ink-faint`는 장식 전용). 웹 글꼴은 불러오지 않음.
 - 360px에서 요일 7칸이 44px을 넘으려면 시트 좌우 여백은 16px이 한계.

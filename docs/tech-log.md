@@ -252,7 +252,7 @@
   - **옛 캐시는 `tm-cache-`로 시작하는 것만 지워요.** `yanniart.github.io`는 같은 계정의 다른 앱과 캐시 공간을 같이 써서, 남의 캐시를 지우면 안 돼요.
   - `tests/`는 캐시하지 않아요(항상 서버에서 받아서 테스트가 최신 코드로 돌게).
   - 등록은 `window.isSecureContext`일 때만(HTTPS·localhost). PC IP 주소(`http://192.168…`)에서는 조용히 건너뛰어요.
-  - **아이콘**: `assets/icons/icon.svg`(둥근 사각형)와 `icon-maskable.svg`(바탕을 꽉 채우고 체크는 가운데 안전 영역 안)를 원본으로 두고, 헤드리스 Chrome으로 그대로 그려서 PNG(192, 512, maskable 512, iPhone용 180)를 만들었어요. 아이콘을 바꾸면 SVG를 고친 뒤 같은 방법으로 PNG를 다시 만들어요. iPhone은 manifest 아이콘 대신 `apple-touch-icon`을 써서 따로 넣었어요.
+  - **아이콘**: `assets/icons/icon.svg`(둥근 사각형)와 `icon-maskable.svg`(바탕을 꽉 채우고 체크는 가운데 안전 영역 안)를 원본으로 두고, 헤드리스 Chrome으로 그대로 그려서 PNG(192, 512, maskable 512, iPhone용 180)를 만들었어요. 아이콘을 바꾸면 SVG를 고친 뒤 `node tools/make-icons.mjs`로 PNG를 다시 만들어요(2026-11-11에 저장소로 옮김, 지금 PNG와 픽셀까지 같게 나오는 것 확인). iPhone은 manifest 아이콘 대신 `apple-touch-icon`을 써서 따로 넣었어요.
   - **개발 중 불편**: localhost에서도 캐시 먼저라 파일을 고쳐도 바로 안 보일 수 있어요. 개발자 도구의 "Update on reload"를 쓰도록 README에 적었어요. 개발 주소에서만 네트워크 먼저로 바꾸는 방법도 있지만, 그러면 개발 중에 오프라인 동작을 확인할 수 없어서 하지 않았어요.
 - **결정 — 다크 모드**
   - `prefers-color-scheme: dark`에서 `base.css`의 변수만 바꿔요. 바탕 `#191919`, 카드 `#252525`, 선 `#373737`.
