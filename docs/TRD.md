@@ -19,7 +19,7 @@
 |---|---|
 | 대상 브라우저 | Android Chrome 최신, iOS Safari 16.4+, PC Chrome/Edge 최신 |
 | 개발 시 실행 | 로컬 서버 필요 (예: VS Code **Live Server** 확장, 또는 `python -m http.server 8000`) |
-| 배포 | HTTPS 정적 호스팅 (GitHub Pages 예정) |
+| 배포 | GitHub Pages (HTTPS): https://yanniart.github.io/task-manager/ — `main` 브랜치에 push하면 1~2분 뒤 반영 |
 | 왜 더블클릭으로 안 되나 | ES 모듈과 서비스 워커는 `file://`에서 동작하지 않아요 ([TL-002](tech-log.md#tl-002)) |
 
 > 휴대폰에서 테스트하려면: PC와 같은 Wi‑Fi에서 PC의 IP 주소(예: `http://192.168.0.10:8000`)로 접속해요. 할 일 기능은 모두 동작하지만, HTTPS가 아니라서 서비스 워커(오프라인·홈 화면 추가)는 동작하지 않아요. 이 부분은 GitHub Pages에 올린 뒤에 확인해요.
@@ -414,6 +414,7 @@ export function createId() {
 | store·storage 확인 (휴지통·가져오기·저장 실패 등) | `node tests/store.test.mjs` | 1초 |
 | 브라우저 확인 (실제 화면을 눌러 보기, 185개) | `node tests/e2e/run.mjs` (고른 단계만: `node tests/e2e/run.mjs 04 07`) | 약 2분 |
 | 성능 측정 | `node tests/e2e/run.mjs perf` (`PERF_N=100`처럼 개수 지정) | 1~2분 |
+| 배포 주소 확인 (HTTPS·서비스 워커·설치 가능·오프라인 9개) | `BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deployed` | 5초 |
 
 - **시간대**: `node tests/run-core.mjs --tz=America/Los_Angeles`. Windows(Git Bash 등)에서는 `TZ=… node`가 무시되니 꼭 `--tz=`로 넘겨요.
 - **브라우저 확인 방식**: Chrome 확장·라이브러리 없이, 설치된 Chrome(없으면 Edge)을 헤드리스로 띄워 DevTools 프로토콜(Node 22 내장 WebSocket)로 조작해요. 실제 터치·마우스·키 입력, 서버를 끈 뒤 새로고침(오프라인), PC IP 접속, 라이트·다크 글자 대비, 두 탭, 파일 내려받기·올리기까지 확인해요.

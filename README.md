@@ -17,7 +17,9 @@
 - 홈 화면 추가·오프라인 사용 (PWA)
 - 브라우저에 저장 (서버 없음)
 
-> 현재 상태: **개발 완료 (M1~M8 + PRD v0.6 추가 기능)** — 실제 휴대폰 확인과 GitHub Pages 배포만 남았어요. 진행 상황은 [개발로그](docs/dev-log.md)를 보세요.
+> **바로 쓰기: https://yanniart.github.io/task-manager/** (휴대폰에서 열고 홈 화면에 추가)
+>
+> 현재 상태: **개발 완료·배포함 (M1~M8 + PRD v0.8)** — 실제 휴대폰 확인만 남았어요. 진행 상황은 [개발로그](docs/dev-log.md)를 보세요.
 
 ## 실행 방법
 
@@ -47,6 +49,7 @@ node tests/store.test.mjs          # 저장·휴지통·가져오기 확인 (1�
 node tests/e2e/run.mjs             # 실제 화면을 눌러 보는 브라우저 확인 185개 (약 2분, Chrome 필요)
 node tests/e2e/run.mjs 07          # 한 단계만
 node tests/e2e/run.mjs perf        # 성능 측정
+BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deployed   # 배포 주소 확인
 ```
 
 브라우저 확인은 Node 22 이상과 Chrome(또는 Edge)이 필요해요. 앱 서버가 안 떠 있으면 Python으로 잠깐 띄워요. 자세한 건 [TRD 8장](docs/TRD.md#8-테스트).

@@ -300,4 +300,6 @@
 
 ## 10. 정해야 할 것
 
-- [ ] 배포 주소: 새 GitHub 저장소 `task-manager`를 만들어 `yanniart.github.io/task-manager`로 올릴지, 다른 곳에 올릴지
+- [x] 배포 주소: 공개 GitHub 저장소 `yanniart/task-manager` → **https://yanniart.github.io/task-manager/** (GitHub Pages, TL-008)
+
+남은 정할 것은 없어요. 남은 일은 실제 휴대폰 확인이에요([개발로그](dev-log.md)).

@@ -15,7 +15,7 @@
 | TL-005 | 날짜는 로컬 'YYYY-MM-DD' 문자열 | 채택 | 2026-11-11 |
 | TL-006 | 반복은 규칙 + 날짜별 할 일 생성, 반복 할 일은 이월 안 함 | 채택 | 2026-11-11 |
 | TL-007 | 상태가 바뀌면 목록 전체를 다시 그림 | 채택 | 2026-11-11 |
-| TL-008 | 배포는 GitHub Pages (HTTPS) | 제안 | 2026-11-11 |
+| TL-008 | 배포는 GitHub Pages (HTTPS) | 채택 (배포함) | 2026-11-11 |
 | TL-009 | 알림 기능 제거 | 채택 | 2026-11-11 |
 | TL-010 | id는 createId()로 만들고 randomUUID가 없으면 대체 | 채택 | 2026-11-11 |
 | TL-011 | 순서는 0부터 이어지는 정수, 바뀔 때마다 다시 매김 | 채택 | 2026-11-11 |
@@ -113,10 +113,11 @@
 <a id="tl-008"></a>
 ## TL-008 배포는 GitHub Pages (HTTPS)
 
-- **상태**: 제안 · 2026-11-11 (PRD 10번 "정해야 할 것"에서 결정 예정)
+- **상태**: 채택 · 2026-11-11 — **배포함**: 공개 저장소 `yanniart/task-manager`의 `main` 브랜치 루트를 GitHub Pages로 → https://yanniart.github.io/task-manager/
 - **배경**: 휴대폰에서 홈 화면 추가와 오프라인 사용(서비스 워커)을 쓰려면 HTTPS 주소가 필요해요.
 - **제안**: 이 폴더를 GitHub 저장소 `task-manager`로 올리고 GitHub Pages를 켜면 `https://yanniart.github.io/task-manager/`로 열려요. 이미 쓰고 있는 GitHub 계정이라 추가 비용이 없어요.
-- **영향**: 모든 경로를 상대 경로로 써야 해요 (TRD 5.8).
+- **영향**: 모든 경로를 상대 경로로 써야 해요 (TRD 5.8). 배포 주소 확인은 `BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deployed`.
+- **공개 범위**: Pages를 무료로 쓰려면 공개 저장소여야 해서 공개로 올렸어요. 그래서 코드·문서(docs/)와 커밋 작성자 이메일도 공개돼요(사용자가 확인하고 정함).
 
 <a id="tl-009"></a>
 ## TL-009 알림 기능 제거

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-휴대폰 중심 개인용 할 일 관리 PWA. M1~M8 + PRD v0.6~v0.8(F13 검색, F14 보기 정렬, F15 내보내기·가져오기, F16 중복 경고, F17 휴지통, 성능, F18 키워드 자동 분류) 개발 완료. 남은 것은 실제 휴대폰 확인과 GitHub Pages 배포(README의 순서). 진행 현황은 `docs/dev-log.md` 위쪽 표를 확인.
+휴대폰 중심 개인용 할 일 관리 PWA. M1~M8 + PRD v0.6~v0.8(F13 검색, F14 보기 정렬, F15 내보내기·가져오기, F16 중복 경고, F17 휴지통, 성능, F18 키워드 자동 분류) 개발 완료. **배포됨**: https://yanniart.github.io/task-manager/ (공개 저장소 `yanniart/task-manager`, `main` push → Pages 1~2분 뒤 반영). 남은 것은 실제 휴대폰 확인. 진행 현황은 `docs/dev-log.md` 위쪽 표를 확인.
 
 설계의 기준은 문서다. 코드를 쓰기 전에 관련 부분을 읽을 것:
 - `docs/PRD.md` — 기능(F1~F11, F9는 제거된 번호라 비워 둠), 화면, 마일스톤 M1~M8
@@ -27,6 +27,7 @@ node tests/run-core.mjs [--tz=America/Los_Angeles]   # core 78개, 1초 (core.te
 node tests/store.test.mjs                            # store·storage, 1초
 node tests/e2e/run.mjs [02 07 ...]                   # 브라우저 확인 185개, 약 2분 (단계 파일 이름 앞부분으로 고르기)
 node tests/e2e/run.mjs perf                          # 성능 측정 (PERF_N=300)
+BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deployed   # 배포 주소 확인 (기본 실행에서는 빠짐)
 ```
 
 - `tests/core.test.html`은 브라우저에서도 열 수 있음(제목 ✅/❌, `globalThis.__testSummary`). 개별 테스트만 고르는 기능은 없음.
@@ -75,6 +76,10 @@ node tests/e2e/run.mjs perf                          # 성능 측정 (PERF_N=300
 - 다른 탭 변경은 `storage` 이벤트 → `replaceState`. 저장 실패는 `onSaveError` → 알림.
 - 디바운스 기본 타이머는 `setTimeout`을 함수로 감싸서 씀(그대로 꺼내 부르면 브라우저에서 Illegal invocation).
 - 키워드 자동 분류(F18, TL-023): `core/classify.js`. 시트의 `add`·`rule-add`에서만, 칩을 직접 누르면(`change`) 멈춤, 저장 전 디바운스 `flush`, 자동 선택은 `{ remember: false }`로 `lastCategory`를 안 바꿈. `settings.autoCategory.keywords`가 `null`이면 `DEFAULT_CATEGORY_KEYWORDS`. 기본 키워드는 두 글자 이상·카테고리끼리 안 겹치게(테스트가 확인). 사용자에게 보이는 조사는 `withParticle`.
+
+**배포할 때** (사용자가 요청할 때만 push)
+- 앱 파일(HTML·CSS·JS·아이콘·manifest)을 바꿨으면 `sw.js`의 `CACHE_VERSION`을 올리고 새 파일은 `APP_FILES`에. 문서·테스트만 바꿨으면 올리지 않아도 됨(캐시 대상이 아님).
+- push 뒤 `gh api repos/yanniart/task-manager/pages/builds/latest`로 빌드가 `built`인지 보고 `deployed` 확인을 돌릴 것.
 
 **이름 규칙**: 파일 kebab-case, 함수·변수 camelCase, 상수 UPPER_SNAKE, CSS BEM(`todo__text--done`), `export function`만, 전역 변수 금지.
 

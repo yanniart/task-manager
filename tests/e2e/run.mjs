@@ -3,6 +3,7 @@
 //   node tests/e2e/run.mjs              모든 단계 (02~08)
 //   node tests/e2e/run.mjs 04 07        고른 단계만 (파일 이름 앞부분으로)
 //   node tests/e2e/run.mjs perf         성능 측정 (PERF_N=100 처럼 개수 지정 가능)
+//   BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deployed   배포 주소 확인
 //
 // 하는 일
 //   1) Chrome(또는 Edge)을 찾아요. 못 찾으면 CHROME_PATH 환경 변수로 알려 주세요.
@@ -104,7 +105,7 @@ const all = readdirSync(stepsDir).filter((f) => f.endsWith(".js")).sort();
 const wanted = process.argv.slice(2);
 const steps = wanted.length
   ? all.filter((f) => wanted.some((w) => f.startsWith(w)))
-  : all.filter((f) => f !== "perf.js"); // 성능 측정은 따로 요청했을 때만
+  : all.filter((f) => f !== "perf.js" && f !== "deployed.js"); // 성능 측정·배포 확인은 따로 요청했을 때만
 if (steps.length === 0) {
   console.error(`맞는 단계가 없어요: ${wanted.join(", ")}\n있는 단계: ${all.join(", ")}`);
   process.exit(2);
