@@ -163,6 +163,7 @@ function isValidTrashEntry(entry) {
 // ---------- 내보내기·가져오기 (PRD F15) ----------
 
 /** 내보낼 JSON 글자. 앱 이름·내보낸 시각을 붙여요(가져올 때 확인용). */
+// app 값 "task-manager"는 앱 이름(MyTask)이 바뀌어도 그대로 둬요. 예전에 내보낸 파일과 같은 표시라야 해요 (TL-025).
 export function serializeForExport(state, now = new Date().toISOString()) {
   return JSON.stringify({ app: "task-manager", exportedAt: now, ...state }, null, 2);
 }
@@ -180,7 +181,7 @@ export function parseImport(text) {
     throw new ImportError("JSON 파일이 아니에요.");
   }
   if (!isPlainObject(data) || !Array.isArray(data.todos) || !Number.isInteger(data.version)) {
-    throw new ImportError("할 일 관리 앱에서 내보낸 파일이 아니에요.");
+    throw new ImportError("MyTask에서 내보낸 파일이 아니에요.");
   }
   if (data.version > SCHEMA_VERSION) {
     throw new ImportError("더 새로운 버전의 앱에서 내보낸 파일이라 가져올 수 없어요.");

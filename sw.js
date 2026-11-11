@@ -4,7 +4,7 @@
 // - 모든 경로는 이 파일 위치 기준 상대 경로예요 (GitHub Pages 하위 경로 /task-manager/ 대응).
 
 const CACHE_PREFIX = "tm-cache-";
-const CACHE_VERSION = "v6"; // v2: 화면 모드(F12) · v3: + 버튼 흑백 · v4: 검색·정렬·내보내기·휴지통 등(F13~F17) · v5: 정렬 아이콘 · v6: 키워드 자동 분류(F18)
+const CACHE_VERSION = "v7"; // v2: 화면 모드(F12) · v3: + 버튼 흑백 · v4: 검색·정렬·내보내기·휴지통 등(F13~F17) · v5: 정렬 아이콘 · v6: 키워드 자동 분류(F18) · v7: 앱 이름 MyTask
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 
 const APP_FILES = [

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-휴대폰 중심 개인용 할 일 관리 PWA. M1~M8 + PRD v0.6~v0.8(F13 검색, F14 보기 정렬, F15 내보내기·가져오기, F16 중복 경고, F17 휴지통, 성능, F18 키워드 자동 분류) 개발 완료. **배포됨**: https://yanniart.github.io/task-manager/ (공개 저장소 `yanniart/task-manager`, `main` push → Pages 1~2분 뒤 반영). 남은 것은 실제 휴대폰 확인. 진행 현황은 `docs/dev-log.md` 위쪽 표를 확인.
+**MyTask** — 휴대폰 중심 개인용 할 일 관리 PWA. 내부 이름(저장 키·캐시 접두사·내보내기 `app` 표시·저장소)은 `task-manager` 그대로 (TL-025). M1~M8 + PRD v0.6~v0.8(F13 검색, F14 보기 정렬, F15 내보내기·가져오기, F16 중복 경고, F17 휴지통, 성능, F18 키워드 자동 분류) 개발 완료. **배포됨**: https://yanniart.github.io/task-manager/ (공개 저장소 `yanniart/task-manager`, `main` push → Pages 1~2분 뒤 반영). 남은 것은 실제 휴대폰 확인. 진행 현황은 `docs/dev-log.md` 위쪽 표를 확인.
 
 설계의 기준은 문서다. 코드를 쓰기 전에 관련 부분을 읽을 것:
 - `docs/PRD.md` — 기능(F1~F11, F9는 제거된 번호라 비워 둠), 화면, 마일스톤 M1~M8
@@ -32,7 +32,7 @@ BASE_URL=https://yanniart.github.io/task-manager/ node tests/e2e/run.mjs deploye
 
 - `tests/core.test.html`은 브라우저에서도 열 수 있음(제목 ✅/❌, `globalThis.__testSummary`). 개별 테스트만 고르는 기능은 없음.
 - **시간대는 `--tz=`로**: Windows에서는 `TZ=… node`가 무시됨(실제로 겪음, 개발로그 참고).
-- e2e 단계 파일(`tests/e2e/steps/*.js`)은 단독 실행 불가 — `run.mjs`가 `harness.js`+`audit.js` 뒤에 이어 붙여 실행. 기능을 바꾸면 해당 단계의 기대값도 고칠 것. 앱 파일을 더하면 `05-pwa-dark-mode.js`의 캐시 파일 개수도.
+- e2e 단계 파일(`tests/e2e/steps/*.js`)은 단독 실행 불가 — `run.mjs`가 `harness.js`+`audit.js` 뒤에 이어 붙여 실행. 기능을 바꾸면 해당 단계의 기대값도 고칠 것. 캐시 버전·파일 개수는 확인 스크립트가 `sw.js`에서 직접 읽음.
 - `python -m http.server`가 가끔 연결을 한 번 거절함 → 그 단계만 다시 돌리면 됨.
 - 모바일 확인은 375px 화면 기준. 휴대폰에서 PC IP(`http://192.168...`)로 접속하면 서비스 워커와 `crypto.randomUUID`가 없으므로 이 환경에서도 앱이 멈추지 않아야 함.
 - 개발용 `?today=YYYY-MM-DD`로 날짜를 바꿔 이월·반복을 확인 (localhost·사설 IP에서만 켜짐, TL-014). 날짜를 앞으로 되돌리면 뒤 날짜에 만든 할 일은 "미래"라서 안 보임.

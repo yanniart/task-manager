@@ -59,7 +59,7 @@ ok(parsed.todos.length === store.getState().todos.length && parsed.rules.length 
 // 가져오기 오류들
 const err = (text) => { try { parseImport(text); return "no error"; } catch (e) { return e instanceof ImportError ? e.message : "OTHER " + e; } };
 ok(err("not json") === "JSON 파일이 아니에요.", "JSON 아님");
-ok(err('{"hello":1}') === "할 일 관리 앱에서 내보낸 파일이 아니에요.", "다른 앱 파일");
+ok(err('{"hello":1}') === "MyTask에서 내보낸 파일이 아니에요.", "다른 앱 파일");
 ok(err('{"version":2,"todos":[]}').startsWith("더 새로운 버전"), "더 새 버전");
 const bad = JSON.parse(json); bad.todos[0].date = "2026-02-30";
 ok(err(JSON.stringify(bad)).includes("날짜가 이상해요"), "없는 날짜", err(JSON.stringify(bad)));

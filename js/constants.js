@@ -1,5 +1,6 @@
 // 앱 전체에서 쓰는 고정값. 다른 파일은 숫자·문자열을 직접 쓰지 말고 여기서 가져와요.
 
+// 앱 이름은 MyTask지만 저장 키는 그대로 "task-manager"예요. 바꾸면 이미 저장된 할 일을 못 읽어요 (TL-025).
 export const STORAGE_KEY = "task-manager";
 export const BACKUP_KEY_PREFIX = "task-manager.backup.";
 export const SCHEMA_VERSION = 1;

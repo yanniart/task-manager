@@ -3,6 +3,7 @@
 //   그래서 send·evaluate·go·reload·shot·check·sleep·problems·dialogs·BASE·OUT 같은 이름을 그냥 써요.
 // ===================== 5단계 확인: PWA·다크 모드·마무리 =====================
 import { networkInterfaces } from "node:os";
+import { readFileSync } from "node:fs";
 const PORT2 = Number(process.env.SECOND_PORT || 8001); // 서버를 껐다 켤 수 있게 따로 띄우는 서버
 const ROOT = process.env.APP_ROOT;
 const B2 = `http://localhost:${PORT2}/`;
@@ -97,20 +98,25 @@ const mf = await evaluate(`(async () => {
   }
   return { name: m.name, short: m.short_name, start: m.start_url, display: m.display, icons };
 })()`);
-check("manifest: 이름·짧은 이름·start_url ./·standalone·아이콘 192/512/maskable 모두 열림",
-  mf.name === "오늘의 할 일" && mf.short === "할 일" && mf.start === "./" && mf.display === "standalone" &&
+check("manifest: 이름·짧은 이름 MyTask·start_url ./·standalone·아이콘 192/512/maskable 모두 열림",
+  mf.name === "MyTask" && mf.short === "MyTask" && mf.start === "./" && mf.display === "standalone" &&
   mf.icons.includes("icon-192.png:true:192:any") && mf.icons.includes("icon-512.png:true:512:any") && mf.icons.includes("icon-maskable-512.png:true:512:maskable"), JSON.stringify(mf));
 
 // ---- 3) 서비스 워커 ----
+// 캐시 버전과 앱 파일 개수는 sw.js에서 직접 읽어요. 버전을 올리거나 파일을 더해도 이 확인을 고칠 필요가 없어요.
+const swFile = readFileSync(join(ROOT, "sw.js"), "utf8");
+const expectedCache = "tm-cache-" + swFile.match(/CACHE_VERSION = "(v\d+)"/)[1];
+const expectedCount = swFile.slice(swFile.indexOf("const APP_FILES"), swFile.indexOf("];")).match(/"\.\/[^"]*"/g).length;
 const sw = await evaluate(`(async () => {
   const reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 8000))]);
   if (!reg) return { ok: false };
   for (let i = 0; i < 40 && !navigator.serviceWorker.controller; i++) await new Promise(r => setTimeout(r, 100));
   const keys = await caches.keys();
-  const cached = await (await caches.open('tm-cache-v6')).keys();
+  const cached = await (await caches.open(${JSON.stringify(expectedCache)})).keys();
   return { ok: true, scope: reg.scope, controller: !!navigator.serviceWorker.controller, keys, count: cached.length };
 })()`);
-check("localhost: 서비스 워커 등록·제어, 캐시 tm-cache-v6에 앱 파일 38개", sw.ok && sw.controller && JSON.stringify(sw.keys) === '["tm-cache-v6"]' && sw.count === 38, JSON.stringify(sw));
+check(`localhost: 서비스 워커 등록·제어, 캐시 ${expectedCache}에 앱 파일 ${expectedCount}개 (sw.js 기준)`,
+  sw.ok && sw.controller && JSON.stringify(sw.keys) === JSON.stringify([expectedCache]) && sw.count === expectedCount, JSON.stringify(sw));
 const install = await send("Page.getInstallabilityErrors");
 check("Chrome 설치 가능 검사 통과 (홈 화면 추가 가능)", install.installabilityErrors.length === 0, JSON.stringify(install.installabilityErrors));
 
@@ -125,7 +131,7 @@ let serverDown = false; try { await fetch(B2); } catch { serverDown = true; }
 const problemsBeforeOffline = problems.length;
 await reload();
 const off = await evaluate(`({ title: document.querySelector('.app-header__title')?.textContent, items: [...document.querySelectorAll('.todo__text')].map(e => e.textContent), css: getComputedStyle(document.body).backgroundColor, ctrl: !!navigator.serviceWorker.controller })`);
-check("서버를 끈 뒤 새로고침해도 앱이 열림 (화면·CSS·저장된 할 일 그대로)", serverDown && off.title === "오늘의 할 일" && off.items.includes("오프라인 확인") && off.css === "rgb(246, 245, 244)" && off.ctrl, JSON.stringify({ serverDown, ...off }));
+check("서버를 끈 뒤 새로고침해도 앱이 열림 (화면·CSS·저장된 할 일 그대로)", serverDown && off.title === "MyTask" && off.items.includes("오프라인 확인") && off.css === "rgb(246, 245, 244)" && off.ctrl, JSON.stringify({ serverDown, ...off }));
 await go(B2 + "?today=" + DAY);
 check("오프라인에서 ?today 붙은 주소도 열림 (주소 뒤 값 무시하고 캐시에서)", (await evaluate(`document.getElementById('today-date').textContent`)).startsWith("11.16(월)"));
 await evaluate(`(() => { document.getElementById('add-button').click(); const i = document.getElementById('todo-text'); i.value = '오프라인에서 추가'; i.dispatchEvent(new Event('input')); document.getElementById('sheet-save').click(); })()`);

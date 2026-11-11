@@ -204,7 +204,7 @@ await evaluate(`document.getElementById('export-button').click()`);
 let file = null;
 for (let i = 0; i < 30 && !file; i++) { await sleep(200); file = readdirSync(DL).find((f) => f.endsWith(".json")); }
 const exported = file ? JSON.parse(readFileSync(join(DL, file), "utf8")) : null;
-check("JSON 내보내기: task-manager-날짜.json, 앱 이름·내보낸 시각·할 일·반복 일정 포함", file === `task-manager-${DAY}.json` && exported?.app === "task-manager" && exported.version === 1 &&
+check("JSON 내보내기: MyTask-날짜.json, 앱 표시·내보낸 시각·할 일·반복 일정 포함", file === `MyTask-${DAY}.json` && exported?.app === "task-manager" && exported.version === 1 &&
   exported.todos.length >= 1 && exported.rules.length === 1 && !!exported.exportedAt, JSON.stringify({ file, keys: exported && Object.keys(exported) }));
 
 const setFile = async (path) => {

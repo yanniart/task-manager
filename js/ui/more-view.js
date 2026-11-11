@@ -183,7 +183,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `task-manager-${todayKey()}.json`;
+  link.download = `MyTask-${todayKey()}.json`;
   document.body.append(link);
   link.click();
   link.remove();

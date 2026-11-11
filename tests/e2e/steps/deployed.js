@@ -8,8 +8,8 @@ check("배포 주소가 HTTPS", BASE.startsWith("https://"), BASE);
 await go(BASE);
 await evaluate("localStorage.clear()");
 await reload();
-const basic = await evaluate(`({ title: document.querySelector('.app-header__title')?.textContent, secure: window.isSecureContext, bg: getComputedStyle(document.body).backgroundColor })`);
-check("앱이 열리고 CSS가 적용됨, 보안 컨텍스트(서비스 워커 가능)", basic.title === "오늘의 할 일" && basic.secure && basic.bg !== "rgba(0, 0, 0, 0)", JSON.stringify(basic));
+const basic = await evaluate(`({ tab: document.title, title: document.querySelector('.app-header__title')?.textContent, secure: window.isSecureContext, bg: getComputedStyle(document.body).backgroundColor })`);
+check("앱(MyTask)이 열리고 CSS가 적용됨, 보안 컨텍스트(서비스 워커 가능)", basic.tab === "MyTask" && basic.title === "MyTask" && basic.secure && basic.bg !== "rgba(0, 0, 0, 0)", JSON.stringify(basic));
 
 // sw.js의 APP_FILES가 하위 경로(/task-manager/)에서 모두 열리는지
 const files = await evaluate(`(async () => {
@@ -57,7 +57,7 @@ await reload();
 const offline = await evaluate(`({ title: document.querySelector('.app-header__title')?.textContent, items: [...document.querySelectorAll('.todo__text')].map(e => e.textContent), online: navigator.onLine })`);
 problems.splice(problemsBefore); // 오프라인 동안 브라우저가 남기는 네트워크 오류는 의도된 것
 await send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-check("오프라인(네트워크 끊김)에서 새로고침해도 앱과 저장된 할 일이 그대로", offline.title === "오늘의 할 일" && offline.items.includes("배포 확인용") && offline.online === false, JSON.stringify(offline));
+check("오프라인(네트워크 끊김)에서 새로고침해도 앱과 저장된 할 일이 그대로", offline.title === "MyTask" && offline.items.includes("배포 확인용") && offline.online === false, JSON.stringify(offline));
 
 await evaluate("localStorage.clear()");
 check("콘솔 오류 없음", problems.length === 0, problems.join("\n"));

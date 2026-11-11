@@ -1,4 +1,4 @@
-# 할 일 관리 앱 TRD (기술 요구사항 문서)
+# MyTask TRD (기술 요구사항 문서)
 
 - 문서 버전: v0.5 (v0.2: 알림 설계 제거, id 대체 생성 방법 추가 · v0.3: 순서 규칙 5.4, 시트 설계 5.9 추가 · v0.4: 화면 모드 `settings.theme`, 6장 · v0.5: 검색·정렬·내보내기/가져오기·중복 확인·휴지통·성능 5.10~5.15, `trash`, `settings.sort` · v0.6: 정렬 아이콘 메뉴 `ui/sort-menu.js` · v0.7: 키워드 자동 분류 `core/classify.js`, `settings.autoCategory`, 5.16 · v0.8: 확인 스크립트를 `tests/`에, 8장)
 - 최종 수정: 2026-11-11
@@ -286,7 +286,7 @@ export function createId() {
 
 ### 5.8 PWA (`manifest.webmanifest`, `sw.js`, `features/pwa.js`)
 
-- manifest: `name`, `short_name`, `start_url: "./"`, `display: "standalone"`, 테마 색, 아이콘 192/512/maskable
+- manifest: `name`·`short_name` "MyTask", `start_url: "./"`, `display: "standalone"`, 테마 색, 아이콘 192/512/maskable
 - 서비스 워커 캐시: 앱 파일(HTML·CSS·JS·아이콘)을 설치 때 저장하고, **캐시 먼저** 응답해요. 그래서 오프라인에서도 열려요.
 - 캐시 이름에 버전을 붙여요 (`tm-cache-v1`). **앱 파일을 고치면 `sw.js`의 버전을 반드시 올려요.** 안 올리면 휴대폰에 옛 버전이 계속 보여요.
 - 모든 경로는 상대 경로(`./`)로 써요. GitHub Pages의 하위 경로(`/task-manager/`)에서도 동작하게 하기 위해서예요.
@@ -424,7 +424,7 @@ export function createId() {
   - 환경 변수로 바꿀 수 있어요: `CHROME_PATH`, `BASE_URL`, `PYTHON`, `CDP_PORT`, `SECOND_PORT`(5단계가 껐다 켜는 서버, 기본 8001).
   - 사설 IP가 없는 컴퓨터에서는 "PC IP로 접속" 확인을 건너뛰어요.
   - `python -m http.server`는 동시에 연결이 몰리면 가끔 한 번 거절해요(`ERR_CONNECTION_REFUSED`). 그 단계만 다시 돌리면 돼요(앱 문제 아님).
-- **기능을 바꾸면**: 관련 단계 파일의 기대값도 같이 고쳐요. 앱 파일을 더하면 5단계의 캐시 파일 개수(`sw.count`)도 바꿔요.
+- **기능을 바꾸면**: 관련 단계 파일의 기대값도 같이 고쳐요. 캐시 버전·파일 개수는 5단계 확인이 `sw.js`에서 직접 읽어서 따로 고치지 않아도 돼요.
 
 core 테스트에서 확인하는 것:
 

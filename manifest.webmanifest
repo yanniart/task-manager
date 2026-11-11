@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "오늘의 할 일",
-  "short_name": "할 일",
+  "name": "MyTask",
+  "short_name": "MyTask",
   "description": "매일 10~20개의 할 일을 관리하는 개인용 앱",
   "lang": "ko",
   "dir": "ltr",
