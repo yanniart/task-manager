@@ -305,4 +305,4 @@
 
 - [x] 배포 주소: 공개 GitHub 저장소 `yanniart/task-manager` → **https://yanniart.github.io/task-manager/** (GitHub Pages, TL-008)
 
-남은 정할 것은 없어요. 남은 일은 실제 휴대폰 확인이에요([개발로그](dev-log.md)).
+남은 정할 것은 없어요. 실제 휴대폰 확인까지 모두 통과했어요([개발로그](dev-log.md)).

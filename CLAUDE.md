@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태
 
-**MyTask** — 휴대폰 중심 개인용 할 일 관리 PWA. 내부 이름(저장 키·캐시 접두사·내보내기 `app` 표시·저장소)은 `task-manager` 그대로 (TL-025). M1~M8 + PRD v0.6~v0.8(F13 검색, F14 보기 정렬, F15 내보내기·가져오기, F16 중복 경고, F17 휴지통, 성능, F18 키워드 자동 분류) 개발 완료. **배포됨**: https://yanniart.github.io/task-manager/ (공개 저장소 `yanniart/task-manager`, `main` push → Pages 1~2분 뒤 반영). 남은 것은 실제 휴대폰 확인. 진행 현황은 `docs/dev-log.md` 위쪽 표를 확인.
+**MyTask** — 휴대폰 중심 개인용 할 일 관리 PWA. 내부 이름(저장 키·캐시 접두사·내보내기 `app` 표시·저장소)은 `task-manager` 그대로 (TL-025). M1~M8 + PRD v0.6~v0.8(F13 검색, F14 보기 정렬, F15 내보내기·가져오기, F16 중복 경고, F17 휴지통, 성능, F18 키워드 자동 분류) 개발 완료. **배포됨**: https://yanniart.github.io/task-manager/ (공개 저장소 `yanniart/task-manager`, `main` push → Pages 1~2분 뒤 반영). 실제 휴대폰(Android Chrome·iPhone Safari) 확인까지 모두 통과(개발로그). 남은 작업 없음. 진행 현황은 `docs/dev-log.md` 위쪽 표를 확인.
 
 설계의 기준은 문서다. 코드를 쓰기 전에 관련 부분을 읽을 것:
 - `docs/PRD.md` — 기능(F1~F11, F9는 제거된 번호라 비워 둠), 화면, 마일스톤 M1~M8

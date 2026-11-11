@@ -19,7 +19,7 @@
 
 > **바로 쓰기: https://yanniart.github.io/task-manager/** (휴대폰에서 열고 홈 화면에 추가)
 >
-> 현재 상태: **개발 완료·배포함 (M1~M8 + PRD v0.8)** — 실제 휴대폰 확인만 남았어요. 진행 상황은 [개발로그](docs/dev-log.md)를 보세요.
+> 현재 상태: **완료 (M1~M8 + PRD v0.9)** — 배포했고 실제 휴대폰(Android·iPhone) 확인도 모두 통과했어요. 기록은 [개발로그](docs/dev-log.md)에 있어요.
 
 ## 실행 방법
 
